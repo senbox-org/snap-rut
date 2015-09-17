@@ -7,7 +7,7 @@
                 <attr name="instanceCreate"
                       methodvalue="org.openide.awt.Actions.alwaysEnabled"/>
                 <attr name="delegate" methodvalue="org.esa.snap.rcp.actions.DefaultOperatorAction.create"/>
-                <attr name="operatorName" stringvalue="rut"/>
+                <attr name="operatorName" stringvalue="S2RutOp"/>
                 <attr name="displayName" stringvalue="Radiometric Uncertainty Tool"/>
                 <attr name="dialogTitle" stringvalue="Radiometric Uncertainty Tool"/>
                 <attr name="targetProductNameSuffix" stringvalue="_rut"/>
