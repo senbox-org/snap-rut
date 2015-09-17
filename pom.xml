@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (C) 2011 Brockmann Consult GmbH (info@brockmann-consult.de)
+  ~ Copyright (C) 2015-2017 by Brockmann Consult GmbH
   ~
   ~ This program is free software; you can redistribute it and/or modify it
   ~ under the terms of the GNU General Public License as published by the Free
@@ -13,7 +13,7 @@
   ~
   ~ You should have received a copy of the GNU General Public License along
   ~ with this program; if not, see http://www.gnu.org/licenses/
-  -->
+-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,16 +22,28 @@
 
     <groupId>org.esa.snap</groupId>
     <artifactId>snap-rut</artifactId>
-    <version>0.1-SNAPSHOT</version>
-    <packaging>nbm</packaging>    
+    <version>0.0.1</version>
+    <packaging>nbm</packaging>
     <name>Radiometric Uncertainty Tool</name>
     <description>Radiometric uncertainty propagation for optical level-1 radiance data</description>
-	
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>test</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src</directory>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>test</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -40,9 +52,13 @@
                 <extensions>true</extensions>
                 <configuration>
                     <sourceManifestFile>manifest.mf</sourceManifestFile>
+                    <brandingToken>snap</brandingToken>
+                    <cluster>snap</cluster>
+                    <licenseFile>LICENSE</licenseFile>
+                    <licenseName>GPL 3</licenseName>
                 </configuration>
             </plugin>
-			<plugin>
+            <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.4</version>
                 <configuration>
@@ -50,20 +66,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        
-        <sourceDirectory>src</sourceDirectory>
-        <testSourceDirectory>test</testSourceDirectory>
-
-        <resources>
-          <resource>
-            <directory>src</directory>
-          </resource>
-        </resources>
-        <testResources>
-          <testResource>
-            <directory>test</directory>
-          </testResource>
-        </testResources>
     </build>
 
 </project>
