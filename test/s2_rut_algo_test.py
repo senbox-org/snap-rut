@@ -18,12 +18,10 @@ class S2RutAlgoTest(unittest.TestCase):
         rut_algo.beta = 0.04447  # CHECK
         rut_algo.u_diff_temp = 1  # CHECK
 
-        band_data = [100,500,1000,2000,5000,10000,15000]
+        band_data = [100,500,1000,2000,5000,10000,15000.]
         rut_result = rut_algo.unc_calculation(np.array(band_data), 7)
 
-        self.assertEqual([237, 54, 32, 22, 16, 13, 13], rut_result)
-        # should actually be
-        # self.assertEqual([225, 54, 32, 22, 16, 13, 13], rut_result)
+        self.assertEqual([225, 54, 32, 22, 16, 13, 13], rut_result)
 
 
 

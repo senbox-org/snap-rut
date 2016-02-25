@@ -27,6 +27,8 @@ class S2RutOp:
         print('initialize: source product location is',
               source_product.getFileLocation())
 
+        width = source_product.getSceneRasterWidth()
+        height = source_product.getSceneRasterHeight()
 
         # gets the uncertainty values for DS and Abs.cal
         self.u_ds = context.getParameter('ds_unc')
@@ -61,7 +63,7 @@ class S2RutOp:
         unc = self._unc_calculation(toa_samples)
 
         unc_tile.setSamples(unc)
-        unc_flags_tile.setSamples(unc_flags)
+        # unc_flags_tile.setSamples(unc_flags)
 
     def dispose(self, context):
         pass
@@ -260,7 +262,7 @@ class S2RutOp:
                                                        u_diff_cos ** 2 + u_diff_k ** 2 + (
                                                        100 * math.sqrt(alpha ** 2 + beta * cn) / cn) ** 2
                                                        + (100 * u_ADC / math.sqrt(3) / cn) ** 2 + (
-                                                       100 * u_DS / cn) ** 2)), 0, 250)
+                                                       100 * u_DS / cn) ** 2), 0, 250))
                  for cn in tile_data]
 
         #        print(u_ref_quant,u_gamma,u_stray_rand,(100*a*u_stray_sys/cn)**2,
