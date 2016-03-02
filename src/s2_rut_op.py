@@ -29,6 +29,7 @@ class S2RutOp:
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
         self.rut_algo.tecta = self.get_tecta(granule_meta)
+        self.rut_algo.k = self.get_k(context)
 
         scene_width = self.source_product.getSceneRasterWidth()
         scene_height = self.source_product.getSceneRasterHeight()
@@ -36,7 +37,7 @@ class S2RutOp:
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
         self.unc_band = rut_product.addBand('unc', snappy.ProductData.TYPE_UINT8)
         self.unc_flags_band = rut_product.addBand('unc_flags', snappy.ProductData.TYPE_UINT8)
-    
+
         context.setTargetProduct(rut_product)
 
 
@@ -51,18 +52,18 @@ class S2RutOp:
         self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, band_index)
 
         toa_tile = context.getSourceTile(self.toa_band, target_rectangle)
-    
+
         unc_tile = target_tiles.get(self.unc_band)
         unc_flags_tile = target_tiles.get(self.unc_flags_band)
-    
+
         toa_samples = toa_tile.getSamplesFloat()
         # this is the core where the uncertainty calculation should grow
         unc = self._unc_calculation(toa_samples)
-    
+
         unc_tile.setSamples(unc)
         #unc_flags_tile.setSamples(unc_flags)
-    
-    
+
+
     def dispose(self, context):
         pass
 
@@ -70,12 +71,12 @@ class S2RutOp:
         return (product_meta.getElement('General_info').
                 getElement('Product_Image_Characteristics').
                 getAttributeDouble('QUANTIFICATION_VALUE'))
-    
+
     def get_u_sun(self, product_meta):
         return (product_meta.getElement('General_Info').
                 getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
-    
+
     def get_tecta(self, granule_meta):
         return (granule_meta.getElement('Geometric_info').
                 getElement('Tile_Angles').getElement('Mean_Sun_Angle').
@@ -88,7 +89,7 @@ class S2RutOp:
                      getElement('Reflectance_Conversion').
                      getElement('Solar_Irradiance_list').getAttributes() if i.getName() ==
                       'SOLAR_IRRADIANCE'][band_id].getData().getElemString())
-    
+
     def get_u_diff_temp(self, datastrip_meta, band_id):
         return ([i for i in datastrip_meta.
                 getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
@@ -109,7 +110,7 @@ class S2RutOp:
                 getElement('Radiometric_Quality_list').
                 getElements() if i.getName() == 'Radiometric_Quality'][band_id]
                 .getElement('Noise_Model').getAttributeDouble('ALPHA'))
-    
+
     def get_a(self, datastrip_meta, band_id):
         return ([i for i in datastrip_meta.getElement('Image_Data_Info').
                 getElement('Sensor_Configuration').
@@ -117,4 +118,6 @@ class S2RutOp:
                 getElement('Spectral_Band_Info').getElements()
                  if i.getName() == 'Spectral_Band_Information'][band_id]
                 .getAttributeDouble('PHYSICAL_GAINS'))
-    
+
+    def get_k(self,context):
+        return(context.getParameter('coverage_factor'))

@@ -18,16 +18,17 @@ class S2RutAlgo:
 
     def __init__(self):
         # uncertainty values for DS and Abs.cal
-        self.u_diff_temp = 0.0
-        self.a = 0.0
-        self.e_sun = 0.0
-        self.u_sun = 0.0
+        self.a = 1.0
+        self.e_sun = 1.0
+        self.u_sun = 1.0
         self.tecta = 0.0
-        self.quant = 0.0
-        self.alpha = 0.0
-        self.beta = 0.0
+        self.quant = 10000.0
+        self.alpha = 0.571
+        self.beta = 0.04447
         self.u_diff_cos = 0.4  # [%]from 0.13° diffuser planarity/micro as in (AIRBUS 2015)
         self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015)
+        self.u_diff_temp = 0  # [%] as a conservative residual (AIRBUS 2015)
+        self.k = 1
 
     def unc_calculation(self, band_data, band_id):
         """
@@ -111,38 +112,27 @@ class S2RutAlgo:
         #######################################################################        
         # 8.	Combine uncertainty contributors
         #######################################################################        
-        # NOTE: no gamma propagation for RUTv1!!!        
-        # u_noise = [math.sqrt(self.alpha**2 + self.beta*cn) for cn in band_data] #[DN]
-        # u_ADC_bis = [100*rad_conf.u_ADC/math.sqrt(3)/cn for cn in band_data]
-        # u_DS_bis = [100*u_DS/cn for cn in band_data]
-        # u_LSB = [math.sqrt((100*u_noise/cn)**2 + u_ADC_bis**2 +
-        #        u_DS_bis**2) for cn in band_data]
-        # u_stray = [math.sqrt(u_stray_rand**2 + (100*a/cn)**2*(u_stray_sys**2
-        #            + u_xtalk**2)) for cn in tile_data]
-        # u_diff = math.sqrt(u_diff_abs**2 + (u_diff_temp/math.sqrt(3))**2 +
-        #            u_diff_cos**2 + u_diff_k**2)
-        # u_ref = math.sqrt((u_ref_quant/math.sqrt(3))**2 + u_gamma**2 +
-        #            u_stray**2 + u_diff**2 + u_LSB**2)
-
-        # All in one line to avoid serial execution (memory duplication)
+        # NOTE: no gamma propagation for RUTv1!!!
         # values given as percentages. Multiplied by 10 and saved to 1 byte(uint8)
         # Clips values to 0-250 --> uncertainty >=25%  assigns a value 250.
         # Uncertainty <=0 represents a processing error (uncertainty is positive)
-        u_ref = [numpy.uint8(numpy.clip(10 * math.sqrt((u_ref_quant / math.sqrt(3)) ** 2
-                                                       + u_gamma ** 2 + u_stray_rand ** 2 + (100 * self.a / cn) ** 2 * (
-                                                           u_stray_sys ** 2 +
-                                                           u_xtalk ** 2) + u_diff_abs ** 2 + (
-                                                           self.u_diff_temp / math.sqrt(3)) ** 2 +
-                                                       self.u_diff_cos ** 2 + self.u_diff_k ** 2 + (
-                                                           100 * math.sqrt(self.alpha ** 2 + self.beta * cn) / cn) ** 2
-                                                       + (100 * rad_conf.u_ADC / math.sqrt(3) / cn) ** 2 + (
-                                                           100 * u_DS / cn) ** 2), 0, 250))
-                 for cn in band_data]
+        u_ref = []
+        for cn in band_data:
+            u_noise = 100 * math.sqrt(self.alpha ** 2 + self.beta * cn) / cn
+            u_ADC = 100 * rad_conf.u_ADC / math.sqrt(3) / cn
+            u_DS = 100 * u_DS / cn
+            u_stray = math.sqrt(u_stray_rand ** 2 + (100 * self.a * u_xtalk / cn) ** 2)
+            u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
+            u_1sigma = math.sqrt((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2
+                                 + u_diff ** 2 + u_noise ** 2 + u_ADC ** 2 + u_DS ** 2)
 
-        #        print(u_ref_quant,u_gamma,u_stray_rand,(100*a*u_stray_sys/cn)**2,
-        #               (100*a*u_xtalk/cn)**2,u_diff_abs,u_diff_temp,u_diff_cos,u_diff_k,
-        #                100*math.sqrt(alpha**2 + beta*cn)/cn,math.sqrt(alpha**2 + beta*cn),
-        #                100*u_ADC/math.sqrt(3)/cn,u_ADC,100*u_DS/cn,u_DS)
+            u_expand = 10 * (self.u_diff_temp + (100 * self.a * u_stray_sys / cn) + self.k * u_1sigma)
+            u_ref.append(numpy.uint8(numpy.clip(u_expand, 0, 250)))
+
+            #print(u_ref_quant,u_gamma,u_stray_rand,100*self.a*u_stray_sys/cn,
+                       #100*self.a*u_xtalk/cn,u_diff_abs,self.u_diff_temp,self.u_diff_cos,self.u_diff_k,
+                        #100*math.sqrt(self.alpha**2 + self.beta*cn)/cn,math.sqrt(self.alpha**2 + self.beta*cn),
+                        #100*u_ADC/math.sqrt(3)/cn,u_ADC,100*u_DS/cn,u_DS)
         #
         #        print tile_data[0]/a
 
@@ -156,3 +146,4 @@ class S2RutAlgo:
         # granule_meta.addElement()
 
         return u_ref
+
