@@ -5,7 +5,7 @@ Created on Wed Jan 20 13:48:33 2016
 @author: jg9
 """
 
-import numpy
+import numpy as np
 import math
 
 import s2_l1_rad_conf as rad_conf
@@ -127,12 +127,12 @@ class S2RutAlgo:
                                  + u_diff ** 2 + u_noise ** 2 + u_ADC ** 2 + u_DS ** 2)
 
             u_expand = 10 * (self.u_diff_temp + (100 * self.a * u_stray_sys / cn) + self.k * u_1sigma)
-            u_ref.append(numpy.uint8(numpy.clip(u_expand, 0, 250)))
+            u_ref.append(np.uint8(np.clip(u_expand, 0, 250)))
 
-            #print(u_ref_quant,u_gamma,u_stray_rand,100*self.a*u_stray_sys/cn,
-                       #100*self.a*u_xtalk/cn,u_diff_abs,self.u_diff_temp,self.u_diff_cos,self.u_diff_k,
-                        #100*math.sqrt(self.alpha**2 + self.beta*cn)/cn,math.sqrt(self.alpha**2 + self.beta*cn),
-                        #100*u_ADC/math.sqrt(3)/cn,u_ADC,100*u_DS/cn,u_DS)
+            # print(u_ref_quant,u_gamma,u_stray_rand,100*self.a*u_stray_sys/cn,
+            # 100*self.a*u_xtalk/cn,u_diff_abs,self.u_diff_temp,self.u_diff_cos,self.u_diff_k,
+            # 100*math.sqrt(self.alpha**2 + self.beta*cn)/cn,math.sqrt(self.alpha**2 + self.beta*cn),
+            # 100*u_ADC/math.sqrt(3)/cn,u_ADC,100*u_DS/cn,u_DS)
         #
         #        print tile_data[0]/a
 
@@ -146,4 +146,3 @@ class S2RutAlgo:
         # granule_meta.addElement()
 
         return u_ref
-

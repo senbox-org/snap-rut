@@ -10,7 +10,7 @@
     <operatorClass>org.esa.snap.python.gpf.PyOperator</operatorClass>
 
     <version>0.1</version>
-    <authors>Javier Goronno, Norman Fomferra</authors>
+    <authors>Javier Gorono, Norman Fomferra</authors>
     <copyright>2015-2017 by National Physical Laboratory and Brockmann Consult GmbH</copyright>
 
     <description>Radiometric uncertainty propagation for Sentinel-2 MSI L1C radiance data</description>
@@ -37,24 +37,15 @@
             <defaultValue>1.0</defaultValue>
         </parameter>
         <parameter>
-            <name>lowerName</name>
-            <description>The name of the spectral band with the lower (red) wavelength.</description>
-            <label>Lower band name</label>
-            <dataType>java.lang.String</dataType>
-            <defaultValue>radiance_7</defaultValue>
-        </parameter>
-        <parameter>
-            <name>upperFactor</name>
-            <description>The value of the upper band is multiplied by this value.</description>
-            <dataType>double</dataType>
-            <defaultValue>1.0</defaultValue>
-        </parameter>
-        <parameter>
-            <name>upperName</name>
-            <description>The name of the spectral band with the higher (NIR) wavelength.</description>
-            <label>Upper band name</label>
-            <dataType>java.lang.String</dataType>
-            <defaultValue>radiance_10</defaultValue>
+            <!-- The name of the parameter; user operator.getParameter('lowerFactor') in your Python code to retrieve the value -->
+            <name>band_id</name>
+            <!-- The description is shown in the help on the command line and also as tooltip in the GUI -->
+            <description>The value of the bandid</description>
+            <valueRange>[0,12]</valueRange>
+            <!-- The type of the parameter; can be boolean, byte, short, int, long, float, double, java.lang.String -->
+            <dataType>int</dataType>
+            <!-- The default value of the parameter; this is used if no value is specified by the user -->
+            <defaultValue>7</defaultValue>
         </parameter>
     </parameters>
 
