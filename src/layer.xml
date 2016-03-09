@@ -4,8 +4,7 @@
     <folder name="Actions">
         <folder name="Operators">
             <file name="RutAction.instance">
-                <attr name="instanceCreate"
-                      methodvalue="org.openide.awt.Actions.alwaysEnabled"/>
+                <attr name="instanceCreate" methodvalue="org.openide.awt.Actions.alwaysEnabled"/>
                 <attr name="delegate" methodvalue="org.esa.snap.core.gpf.ui.DefaultOperatorAction.create"/>
                 <attr name="operatorName" stringvalue="S2RutOp"/>
                 <attr name="displayName" stringvalue="Radiometric Uncertainty Tool"/>
