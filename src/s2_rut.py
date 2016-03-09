@@ -7,6 +7,9 @@ Created on Wed Jan 20 13:48:33 2016
 import snappy
 import s2_rut_algo
 import numpy as np
+import datetime
+
+import s2_l1_rad_conf as rad_conf
 
 
 class S2RutOp:
@@ -18,6 +21,7 @@ class S2RutOp:
         self.unc_band = None
         self.toa_band_id = None
         self.toa_band = None
+        self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
 
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
@@ -52,9 +56,7 @@ class S2RutOp:
 
         context.setTargetProduct(rut_product)
 
-
     def compute(self, context, target_tiles, target_rectangle):
-
         toa_tile = context.getSourceTile(self.toa_band, target_rectangle)
 
         unc_tile = target_tiles.get(self.unc_band)
@@ -91,11 +93,11 @@ class S2RutOp:
                       'SOLAR_IRRADIANCE'][band_id].getData().getElemString())
 
     def get_u_diff_temp(self, datastrip_meta, band_id):
-        return ([i for i in datastrip_meta.
-                getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
-                getElement('Radiometric_Quality_list').getElements()
-                 if i.getName() == 'Radiometric_Quality'][band_id]
-                .getAttributeDouble('MULTI_TEMPORAL_CALIBRATION_ACCURACY'))
+        # START or STOP time has no effect. We provide a degradation based on MERIS year rates
+        time_start = datetime.datetime.strptime(datastrip_meta.getElement('General_Info').
+                                                getElement('Datastrip_Time_Info').
+                                                getAttributeString('DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
+        return (time_start - self.time_init).days / 365.25 * rad_conf.u_diff_temp_rate[band_id]
 
     def get_beta(self, datastrip_meta, band_id):
         return ([i for i in datastrip_meta.

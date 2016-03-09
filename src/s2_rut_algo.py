@@ -18,16 +18,17 @@ class S2RutAlgo:
 
     def __init__(self):
         # uncertainty values for DS and Abs.cal
-        self.a = 1.0
-        self.e_sun = 1.0
+        self.a = 0.0
+        self.e_sun = 0.0
         self.u_sun = 1.0
         self.tecta = 0.0
         self.quant = 10000.0
-        self.alpha = 0.571
-        self.beta = 0.04447
+        self.alpha = 0.0
+        self.beta = 0.0
         self.u_diff_cos = 0.4  # [%]from 0.13° diffuser planarity/micro as in (AIRBUS 2015)
         self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015)
-        self.u_diff_temp = 0  # [%] as a conservative residual (AIRBUS 2015)
+        self.u_diff_temp = 1.0  # [%] as a conservative residual (AIRBUS 2015)
+        self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1
 
     def unc_calculation(self, band_data, band_id):
@@ -119,22 +120,14 @@ class S2RutAlgo:
         u_ref = []
         for cn in band_data:
             u_noise = 100 * math.sqrt(self.alpha ** 2 + self.beta * cn) / cn
-            u_ADC = 100 * rad_conf.u_ADC / math.sqrt(3) / cn
-            u_DS = 100 * u_DS / cn
+            u_adc = 100 * self.u_ADC / math.sqrt(3) / cn
+            u_ds = 100 * u_DS / cn
             u_stray = math.sqrt(u_stray_rand ** 2 + (100 * self.a * u_xtalk / cn) ** 2)
             u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
-            u_1sigma = math.sqrt((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2
-                                 + u_diff ** 2 + u_noise ** 2 + u_ADC ** 2 + u_DS ** 2)
-
+            u_1sigma = math.sqrt((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
+                                 u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
             u_expand = 10 * (self.u_diff_temp + (100 * self.a * u_stray_sys / cn) + self.k * u_1sigma)
             u_ref.append(np.uint8(np.clip(u_expand, 0, 250)))
-
-            # print(u_ref_quant,u_gamma,u_stray_rand,100*self.a*u_stray_sys/cn,
-            # 100*self.a*u_xtalk/cn,u_diff_abs,self.u_diff_temp,self.u_diff_cos,self.u_diff_k,
-            # 100*math.sqrt(self.alpha**2 + self.beta*cn)/cn,math.sqrt(self.alpha**2 + self.beta*cn),
-            # 100*u_ADC/math.sqrt(3)/cn,u_ADC,100*u_DS/cn,u_DS)
-        #
-        #        print tile_data[0]/a
 
         #######################################################################        
         # 9.	Append uncertainty information to the metadata

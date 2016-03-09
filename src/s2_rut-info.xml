@@ -10,7 +10,7 @@
     <operatorClass>org.esa.snap.python.gpf.PyOperator</operatorClass>
 
     <version>0.1</version>
-    <authors>Javier Gorono, Norman Fomferra</authors>
+    <authors>Javier Gorono, Norman Fomferra and Marco Peters</authors>
     <copyright>2015-2017 by National Physical Laboratory and Brockmann Consult GmbH</copyright>
 
     <description>Radiometric uncertainty propagation for Sentinel-2 MSI L1C radiance data</description>
