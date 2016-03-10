@@ -30,6 +30,7 @@ class S2RutAlgo:
         self.u_diff_temp = 1.0  # [%] as a conservative residual (AIRBUS 2015)
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1
+        self.tecta_warning = False
 
     def unc_calculation(self, band_data, band_id):
         """
