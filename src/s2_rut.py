@@ -65,7 +65,7 @@ class S2RutOp:
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float32), self.toa_band_id)
 
-        unc_tile.setSamples(unc)
+        unc_tile.setSamples(np.array(unc, dtype=np.float32))
 
     def dispose(self, context):
         pass
