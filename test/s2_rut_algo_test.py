@@ -18,7 +18,7 @@ class S2RutAlgoTest(unittest.TestCase):
         band_data = [100, 500, 1000, 2000, 5000, 10000, 15000.]
         rut_result = rut_algo.unc_calculation(np.array(band_data), 7)
 
-        self.assertEqual([250, 92, 64, 42, 28, 24, 23], rut_result)
+        self.assertEqual([250, 85, 55, 39, 28, 24, 23], rut_result)
 
     def test_simple_case_B2(self):
         rut_algo = s2_rut_algo.S2RutAlgo()
@@ -34,7 +34,7 @@ class S2RutAlgoTest(unittest.TestCase):
         band_data = [100, 500, 1000, 2000, 5000, 10000, 15000.]
         rut_result = rut_algo.unc_calculation(np.array(band_data), 1)
 
-        self.assertEqual([250, 92, 64, 42, 28, 24, 23], rut_result)
+        self.assertEqual([250, 96, 61, 42, 31, 26, 25], rut_result)
 
     def test_simple_case_B1(self):
         rut_algo = s2_rut_algo.S2RutAlgo()
@@ -50,6 +50,6 @@ class S2RutAlgoTest(unittest.TestCase):
         band_data = [100, 500, 1000, 2000, 5000, 10000, 15000.]
         rut_result = rut_algo.unc_calculation(np.array(band_data), 0)
 
-        self.assertEqual([250, 92, 64, 42, 28, 24, 23], rut_result)
+        self.assertEqual([250, 97, 61, 42, 31, 26, 25], rut_result)
 
 
