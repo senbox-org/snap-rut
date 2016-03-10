@@ -5,7 +5,8 @@ Created on Wed Jan 20 13:48:33 2016
 @author: jg9
 """
 import snappy
-import s2_rut_algo
+# import s2_rut_algo
+import s2_rut_algo_opt as s2_rut_algo
 import numpy as np
 import datetime
 
@@ -65,7 +66,8 @@ class S2RutOp:
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float32), self.toa_band_id)
 
-        unc_tile.setSamples(np.array(unc, dtype=np.float32))
+        # unc_tile.setSamples(np.array(unc, dtype=np.float32))
+        unc_tile.setSamples(unc)
 
     def dispose(self, context):
         pass
