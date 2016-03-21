@@ -53,7 +53,7 @@ class S2RutOp:
         scene_height = self.source_product.getSceneRasterHeight()
 
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
-        self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc', snappy.ProductData.TYPE_UINT8)
+        self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8)
 
         context.setTargetProduct(rut_product)
 
@@ -61,10 +61,10 @@ class S2RutOp:
         toa_tile = context.getSourceTile(self.toa_band, target_rectangle)
 
         unc_tile = target_tiles.get(self.unc_band)
-
-        toa_samples = toa_tile.getSamplesFloat()
+        
+        toa_samples = toa_tile.getSamplesInt()
         # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float32), self.toa_band_id)
+        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), self.toa_band_id)
 
         # unc_tile.setSamples(np.array(unc, dtype=np.float32))
         unc_tile.setSamples(unc)
