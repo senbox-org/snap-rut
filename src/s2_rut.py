@@ -55,16 +55,20 @@ class S2RutOp:
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
         self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8)
 
+        snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
+
         context.setTargetProduct(rut_product)
 
     def compute(self, context, target_tiles, target_rectangle):
         toa_tile = context.getSourceTile(self.toa_band, target_rectangle)
 
         unc_tile = target_tiles.get(self.unc_band)
-        
+
         toa_samples = toa_tile.getSamplesInt()
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), self.toa_band_id)
+
+        snappy.ProductUtils.copyGeoCoding(self.toa_band, self.unc_band)
 
         # unc_tile.setSamples(np.array(unc, dtype=np.float32))
         unc_tile.setSamples(unc)
