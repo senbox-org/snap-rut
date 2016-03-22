@@ -1,5 +1,5 @@
 import unittest
-import s2_rut_algo_opt as s2_rut_algo
+import s2_rut_algo as s2_rut_algo
 import numpy as np
 
 

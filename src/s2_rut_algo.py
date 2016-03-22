@@ -69,9 +69,8 @@ class S2RutAlgo:
             self.tecta_warning = True
             print('Tile mean SZA is' + str(self.tecta) + '-->conversion error >5%')
 
-        # Replace the reflectance factors by CN values (avoid memory duplicate)
-        band_data[:] = [i * self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) /
-                        (math.pi * self.quant) for i in band_data]
+        # Replace the reflectance factors by CN values
+        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (math.pi * self.quant)) * band_data
 
         #######################################################################
         # 3.	Orthorectification process
@@ -118,17 +117,15 @@ class S2RutAlgo:
         # values given as percentages. Multiplied by 10 and saved to 1 byte(uint8)
         # Clips values to 0-250 --> uncertainty >=25%  assigns a value 250.
         # Uncertainty <=0 represents a processing error (uncertainty is positive)
-        u_ref = []
-        for cn in band_data:
-            u_noise = 100 * math.sqrt(self.alpha ** 2 + self.beta * cn) / cn
-            u_adc = 100 * self.u_ADC / math.sqrt(3) / cn
-            u_ds = 100 * u_DS / cn
-            u_stray = math.sqrt(u_stray_rand ** 2 + (100 * self.a * u_xtalk / cn) ** 2)
-            u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
-            u_1sigma = math.sqrt((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
-                                 u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
-            u_expand = 10 * (self.u_diff_temp + (100 * self.a * u_stray_sys / cn) + self.k * u_1sigma)
-            u_ref.append(np.uint8(np.clip(u_expand, 0, 250)))
+        u_noise = 100 * np.sqrt(self.alpha ** 2 + self.beta * cn) / cn
+        u_adc = (100 * self.u_ADC / math.sqrt(3)) / cn
+        u_ds = (100 * u_DS) / cn
+        u_stray = np.sqrt(u_stray_rand ** 2 + ((100 * self.a * u_xtalk) / cn) ** 2)
+        u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
+        u_1sigma = np.sqrt(((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2) +
+                             u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
+        u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
+        u_ref = np.uint8(np.clip(u_expand, 0, 250))
 
         #######################################################################        
         # 9.	Append uncertainty information to the metadata

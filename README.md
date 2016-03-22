@@ -1,2 +1,3 @@
-# snap-rut
-RUT: Radiometric uncertainty propagation tool for optical level-1 radiance data (ESA IDEAS+ Programme)
+# SNAP-RUT
+S2 RUT: Radiometric Uncertainty Tool for Sentinel 2 L1C products
+ESA IDEAS+ Programme

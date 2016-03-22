@@ -6,7 +6,7 @@ Created on Wed Jan 20 13:48:33 2016
 """
 import snappy
 # import s2_rut_algo
-import s2_rut_algo_opt as s2_rut_algo
+import s2_rut_algo
 import numpy as np
 import datetime
 
