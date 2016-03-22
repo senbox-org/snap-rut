@@ -10,10 +10,10 @@
     <operatorClass>org.esa.snap.python.gpf.PyOperator</operatorClass>
 
     <version>0.1</version>
-    <authors>Javier Gorono, Norman Fomferra and Marco Peters</authors>
+    <authors>Javier Gorrono, Norman Fomferra and Marco Peters</authors>
     <copyright>2015-2017 by National Physical Laboratory and Brockmann Consult GmbH</copyright>
 
-    <description>Radiometric uncertainty propagation for Sentinel-2 MSI L1C radiance data</description>
+    <description>Radiometric uncertainty tool for Sentinel-2 MSI L1C products.</description>
 
     <namedSourceProducts>
         <!-- One or more source products can be specified.
@@ -30,7 +30,7 @@
             <!-- The name of the parameter; user operator.getParameter('lowerFactor') in your Python code to retrieve the value -->
             <name>coverage_factor</name>
             <!-- The description is shown in the help on the command line and also as tooltip in the GUI -->
-            <description>The value of the coverage factor for the uncertainty evaluation.</description>
+            <description>The value of the coverage factor for the uncertainty evaluation (k=1 means 68.27% probability)</description>
             <!-- The type of the parameter; can be boolean, byte, short, int, long, float, double, java.lang.String -->
             <dataType>double</dataType>
             <!-- The default value of the parameter; this is used if no value is specified by the user -->
