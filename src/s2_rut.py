@@ -42,6 +42,7 @@ class S2RutOp:
         self.rut_algo.quant = self.get_quant(self.product_meta)
         self.rut_algo.tecta = self.get_tecta(granule_meta)
         self.rut_algo.k = self.get_k(context)
+        self.rut_algo.unc_select = self.get_unc_select(context)
 
         self.rut_algo.a = self.get_a(self.datastrip_meta, self.toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, self.toa_band_id)
@@ -53,7 +54,8 @@ class S2RutOp:
         scene_height = self.source_product.getSceneRasterHeight()
 
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
-        self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8)
+        self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k),
+                                            snappy.ProductData.TYPE_UINT8)
 
         snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
 
@@ -129,3 +131,11 @@ class S2RutOp:
 
     def get_k(self, context):
         return (context.getParameter('coverage_factor'))
+
+    def get_unc_select(self, context):
+        return ([context.getParameter('Instrument_noise'), context.getParameter('OOF_straylight-systematic'),
+                 context.getParameter('OOF_straylight-random'), context.getParameter('Crosstalk'),
+                 context.getParameter('ADC_quantisation'), context.getParameter('DS_stability'),
+                 context.getParameter('Gamma_knowledge'), context.getParameter('Diffuser-absolute_knowledge'),
+                 context.getParameter('Diffuser-temporal_knowledge'), context.getParameter('Diffuser-cosine_effect'),
+                 context.getParameter('Diffuser-straylight_residual'), context.getParameter('L1C_image_quantisation')])

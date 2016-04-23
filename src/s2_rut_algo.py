@@ -31,6 +31,8 @@ class S2RutAlgo:
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1
         self.tecta_warning = False
+        self.unc_select = [True, True, True, True, True, True, True, True, True, True, True,
+                           True]  # list of booleans with user selected uncertainty sources(order as in interface)
 
     def unc_calculation(self, band_data, band_id):
         """
@@ -52,9 +54,10 @@ class S2RutAlgo:
         # 1.	Initial check
         #######################################################################        
         # a.	Cloud pixel
-        # b.	pixel_value == 0, [product metadata] General_Info/Product_Image_Characteristics/Special_Values/SPECIAL_VALUE_TEXT [NODATA]
-        # c.	pixel_value == 1,  [product metadata] General_Info/Product_Image_Characteristics/Special_Values/SPECIAL_VALUE_TEXT [SATURATED]
-
+        # b.	pixel_value == 0, [product metadata] General_Info/Product_Image_Characteristics/
+        # Special_Values/SPECIAL_VALUE_TEXT [NODATA]
+        # c.	pixel_value == 1,  [product metadata] General_Info/Product_Image_Characteristics/Special_Values/
+        # SPECIAL_VALUE_TEXT [SATURATED]
 
         #######################################################################
         # 2.	Undo reflectance conversion
@@ -70,45 +73,83 @@ class S2RutAlgo:
             print('Tile mean SZA is' + str(self.tecta) + '-->conversion error >5%')
 
         # Replace the reflectance factors by CN values
-        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (math.pi * self.quant)) * band_data
+        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (
+            math.pi * self.quant)) * band_data
 
         #######################################################################
         # 3.	Orthorectification process
         #######################################################################        
+
         # TBD in RUTv2. Here both terms will be used with no distinction.
 
         #######################################################################        
         # 4.	L1B uncertainty contributors: raw and dark signal
         #######################################################################
 
-        # u_noise is directly added in the combination see section 8
+        if self.unc_select[0]:
+            u_noise = 100 * np.sqrt(self.alpha ** 2 + self.beta * cn) / cn
+        else:
+            u_noise = 0
 
         # [W.m-2.sr-1.μm-1] 0.3%*Lref all bands (AIRBUS 2015) and (AIRBUS 2014)
-        u_stray_sys = 0.3 * rad_conf.Lref[band_id] / 100
+        if self.unc_select[1]:
+            u_stray_sys = 0.3 * rad_conf.Lref[band_id] / 100
+        else:
+            u_stray_sys = 0
 
-        u_stray_rand = rad_conf.u_stray_rand_all[band_id]  # [%](AIRBUS 2015) and (AIRBUS 2012)
+        if self.unc_select[2]:
+            u_stray_rand = rad_conf.u_stray_rand_all[band_id]  # [%](AIRBUS 2015) and (AIRBUS 2012)
+        else:
+            u_stray_rand = 0
 
-        u_xtalk = rad_conf.u_xtalk_all[band_id]  # [W.m-2.sr-1.μm-1](AIRBUS 2015)
+        if self.unc_select[3]:
+            u_xtalk = rad_conf.u_xtalk_all[band_id]  # [W.m-2.sr-1.μm-1](AIRBUS 2015)
+        else:
+            u_xtalk = 0
 
-        u_DS = rad_conf.u_DS_all[band_id]
+        if not self.unc_select[4]:
+            self.u_ADC = 0  # predefined but updated to 0 if deselected by user
+
+        if self.unc_select[5]:
+            u_DS = rad_conf.u_DS_all[band_id]
+        else:
+            u_DS = 0
 
         #######################################################################        
         # 5.	L1B uncertainty contributors: gamma correction
         #######################################################################        
 
-        u_gamma = 0.4  # [%] (AIRBUS 2015)
+        if self.unc_select[6]:
+            u_gamma = 0.4  # [%] (AIRBUS 2015)
+        else:
+            u_gamma = 0
 
-        #######################################################################        
+        #######################################################################
         # 6.	L1C uncertainty contributors: absolute calibration coefficient
         #######################################################################
 
-        u_diff_abs = rad_conf.u_diff_absarray[band_id]
+        if self.unc_select[7]:
+            u_diff_abs = rad_conf.u_diff_absarray[band_id]
+        else:
+            u_diff_abs = 0
+
+        if not self.unc_select[8]:
+            self.u_diff_temp = 0 # calculated in s2_rut.py. Updated to 0 if deselected by user
+
+        if not self.unc_select[9]:
+            self.u_diff_cos = 0  # predefined but updated to 0 if deselected by user
+
+        if not self.unc_select[10]:
+            self.u_diff_k = 0  # predefined but updated to 0 if deselected by user
 
         #######################################################################
         # 7.	L1C uncertainty contributors: reflectance conversion
         #######################################################################
 
-        u_ref_quant = 100 * (0.5 / self.quant)  # [%]scaling 0-1 in steps number=quant
+        if self.unc_select[11]:
+            u_ref_quant = 100 * (0.5 / self.quant)  # [%]scaling 0-1 in steps number=quant
+        else:
+            u_ref_quant = 0
 
         #######################################################################        
         # 8.	Combine uncertainty contributors
@@ -117,13 +158,12 @@ class S2RutAlgo:
         # values given as percentages. Multiplied by 10 and saved to 1 byte(uint8)
         # Clips values to 0-250 --> uncertainty >=25%  assigns a value 250.
         # Uncertainty <=0 represents a processing error (uncertainty is positive)
-        u_noise = 100 * np.sqrt(self.alpha ** 2 + self.beta * cn) / cn
         u_adc = (100 * self.u_ADC / math.sqrt(3)) / cn
         u_ds = (100 * u_DS) / cn
         u_stray = np.sqrt(u_stray_rand ** 2 + ((100 * self.a * u_xtalk) / cn) ** 2)
         u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
         u_1sigma = np.sqrt(((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2) +
-                             u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
+                           u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
         u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
         u_ref = np.uint8(np.clip(u_expand, 0, 250))
 
