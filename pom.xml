@@ -54,7 +54,6 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <sourceManifestFile>manifest.mf</sourceManifestFile>
                     <brandingToken>snap</brandingToken>
                     <cluster>snap</cluster>
                     <licenseFile>LICENSE</licenseFile>
