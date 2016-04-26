@@ -4,9 +4,6 @@ Created on Wed Jan 20 13:48:33 2016
 
 @author: jg9
 """
-import snappy
-import s2_rut_algo
-import numpy as np
 import datetime
 
 import s2_l1_rad_conf as rad_conf

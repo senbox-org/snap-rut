@@ -32,24 +32,27 @@
     </properties>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
-        <testSourceDirectory>test</testSourceDirectory>
         <resources>
             <resource>
-                <directory>src</directory>
+                <directory>${basedir}/src/main/python</directory>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
             </resource>
         </resources>
-        <testResources>
-            <testResource>
-                <directory>test</directory>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
                 <version>3.14</version>
                 <extensions>true</extensions>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.help</groupId>
+                        <artifactId>javahelp</artifactId>
+                        <version>2.0.05</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <sourceManifestFile>manifest.mf</sourceManifestFile>
                     <brandingToken>snap</brandingToken>

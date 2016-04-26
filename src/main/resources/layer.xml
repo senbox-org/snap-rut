@@ -11,8 +11,7 @@
                 <attr name="targetProductNameSuffix" stringvalue="_rut"/>
                 <attr name="ShortDescription"
                       stringvalue="Radiometric uncertainty propagation for optical level-1 radiance data"/>
-                <!-- The helpId once help contents is provided-->
-                <!--<attr name="helpId" stringvalue="rutDoc"/>-->
+                <attr name="helpId" stringvalue="s2rutDoc"/>
             </file>
         </folder>
     </folder>
@@ -28,14 +27,12 @@
         </folder>
     </folder>
 
-    <!--
-        <folder name="Services">
-            <folder name="JavaHelp">
-                <file name="helpset.xml" url="helpset.xml">
-                    <attr name="position" intvalue="4600"/>
-                </file>
-            </folder>
+    <folder name="Services">
+        <folder name="JavaHelp">
+            <file name="helpset.xml" url="helpset.xml">
+                <attr name="position" intvalue="4600"/>
+            </file>
         </folder>
-    -->
+    </folder>
 
 </filesystem>
