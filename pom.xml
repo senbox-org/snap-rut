@@ -22,7 +22,7 @@
 
     <groupId>org.esa.snap</groupId>
     <artifactId>snap-rut</artifactId>
-    <version>0.0.1</version>
+    <version>0.1</version>
     <packaging>nbm</packaging>
     <name>Radiometric Uncertainty Tool</name>
     <description>Radiometric uncertainty propagation for optical level-1 radiance data</description>
