@@ -5,7 +5,6 @@ Created on Wed Jan 20 13:48:33 2016
 @author: jg9
 """
 import snappy
-# import s2_rut_algo
 import s2_rut_algo
 import numpy as np
 import datetime
@@ -60,8 +59,6 @@ class S2RutOp:
             snappy.ProductUtils.copyGeoCoding(source_Band, unc_toa_band)
 
 
-        # self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8)
-
         context.setTargetProduct(rut_product)
 
     def computeTile(self, context, band, tile):
@@ -79,7 +76,6 @@ class S2RutOp:
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
 
-        # unc_tile.setSamples(np.array(unc, dtype=np.float32))
         tile.setSamples(unc)
 
 
