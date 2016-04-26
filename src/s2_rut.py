@@ -20,9 +20,10 @@ class S2RutOp:
         self.datastrip_meta = None
         self.rut_algo = s2_rut_algo.S2RutAlgo()
         self.unc_band = None
-        self.toa_band_id = None
         self.toa_band = None
         self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
+        self.sourceBandMap = None
+
 
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
@@ -35,8 +36,7 @@ class S2RutOp:
 
         granule_meta = [i for i in granules_meta.getElements()][0]
 
-        self.toa_band_id = context.getParameter('band_id')
-        self.toa_band = self.source_product.getBandAt(self.toa_band_id)
+        self.toa_band_names = context.getParameter('band_names')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
@@ -44,36 +44,44 @@ class S2RutOp:
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
-        self.rut_algo.a = self.get_a(self.datastrip_meta, self.toa_band_id)
-        self.rut_algo.e_sun = self.get_e_sun(self.product_meta, self.toa_band_id)
-        self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, self.toa_band_id)
-        self.rut_algo.beta = self.get_beta(self.datastrip_meta, self.toa_band_id)
-        self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, self.toa_band_id)
-
         scene_width = self.source_product.getSceneRasterWidth()
         scene_height = self.source_product.getSceneRasterHeight()
 
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
-        self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k),
-                                            snappy.ProductData.TYPE_UINT8)
-
         snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
+        self.sourceBandMap = {}
+        for name in self.toa_band_names:
+            source_Band = self.source_product.getBand(name)
+            unc_toa_band = snappy.Band(name + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8, source_Band.getRasterWidth(), source_Band.getRasterHeight())
+            unc_toa_band.setNoDataValue(250)
+            unc_toa_band.setNoDataValueUsed(True)
+            rut_product.addBand(unc_toa_band)
+            self.sourceBandMap[unc_toa_band] = source_Band
+            snappy.ProductUtils.copyGeoCoding(source_Band, unc_toa_band)
+
+
+        # self.unc_band = rut_product.addBand(self.toa_band.getName() + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8)
 
         context.setTargetProduct(rut_product)
 
-    def compute(self, context, target_tiles, target_rectangle):
-        toa_tile = context.getSourceTile(self.toa_band, target_rectangle)
+    def computeTile(self, context, band, tile):
+        source_band = self.sourceBandMap[band]
+        toa_band_id = source_band.getSpectralBandIndex() - 1
+        self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
+        self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
+        self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
+        self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
+        self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
 
-        unc_tile = target_tiles.get(self.unc_band)
-
+        toa_tile = context.getSourceTile(source_band, tile.getRectangle())
         toa_samples = toa_tile.getSamplesInt()
-        # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), self.toa_band_id)
 
-        snappy.ProductUtils.copyGeoCoding(self.toa_band, self.unc_band)
+        # this is the core where the uncertainty calculation should grow
+        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
 
         # unc_tile.setSamples(np.array(unc, dtype=np.float32))
-        unc_tile.setSamples(unc)
+        tile.setSamples(unc)
+
 
     def dispose(self, context):
         pass
