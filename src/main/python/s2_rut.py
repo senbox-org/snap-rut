@@ -49,13 +49,13 @@ class S2RutOp:
         snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
         self.sourceBandMap = {}
         for name in self.toa_band_names:
-            source_Band = self.source_product.getBand(name)
-            unc_toa_band = snappy.Band(name + '_unc_k_' + str(self.rut_algo.k), snappy.ProductData.TYPE_UINT8, source_Band.getRasterWidth(), source_Band.getRasterHeight())
+            source_band = self.source_product.getBand(name)
+            unc_toa_band = snappy.Band(name + '_rut'), snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(), source_band.getRasterHeight())
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             rut_product.addBand(unc_toa_band)
-            self.sourceBandMap[unc_toa_band] = source_Band
-            snappy.ProductUtils.copyGeoCoding(source_Band, unc_toa_band)
+            self.sourceBandMap[unc_toa_band] = source_band
+            snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
 
 
         context.setTargetProduct(rut_product)

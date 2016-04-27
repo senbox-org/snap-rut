@@ -134,7 +134,7 @@ class S2RutAlgo:
             u_diff_abs = 0
 
         if not self.unc_select[8]:
-            self.u_diff_temp = 0 # calculated in s2_rut.py. Updated to 0 if deselected by user
+            self.u_diff_temp = 0  # calculated in s2_rut.py. Updated to 0 if deselected by user
 
         if not self.unc_select[9]:
             self.u_diff_cos = 0  # predefined but updated to 0 if deselected by user
@@ -147,7 +147,7 @@ class S2RutAlgo:
         #######################################################################
 
         if self.unc_select[11]:
-            u_ref_quant = 100 * (0.5 / self.quant)  # [%]scaling 0-1 in steps number=quant
+            u_ref_quant = 100 * (0.5 / math.sqrt(3)) / band_data  # [%]scaling 0-1 in steps number=quant
         else:
             u_ref_quant = 0
 
@@ -162,7 +162,7 @@ class S2RutAlgo:
         u_ds = (100 * u_DS) / cn
         u_stray = np.sqrt(u_stray_rand ** 2 + ((100 * self.a * u_xtalk) / cn) ** 2)
         u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
-        u_1sigma = np.sqrt(((u_ref_quant / math.sqrt(3)) ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2) +
+        u_1sigma = np.sqrt(u_ref_quant ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
                            u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
         u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
         u_ref = np.uint8(np.clip(u_expand, 0, 250))
