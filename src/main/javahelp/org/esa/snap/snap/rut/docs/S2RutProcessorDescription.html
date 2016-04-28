@@ -30,8 +30,97 @@
     </tr>
 </table>
 
-<h3>Processor Documentation of S2-RUT</h3>
+<h3>User Interface</h3>
 
+<p>
+    The S2-RUT processor can be invoked in the Sentinel Toolbox from the menu by selecting
+    <b>Optical->Preprocessing->Sentinel-2 Radiometric Uncertainty Tool</b>.
+    On the command line processor is available by means of the Graph Processing Tool <code>gpt</code>
+    which is located in the Sentinel Toolbox <code>bin</code> directory.
+    Typing <code>gpt S2Rut -h</code> displays further information.
+</p>
+
+<p>
+    Selecting the <b>Sentinel-2 Radiometric Uncertainty Tool</b> command from the Sentinel Toolbox menu opens up the
+    following dialog:
+</p>
+
+<p align="center"><img src="images/IOParameters.png"></p>
+
+<h5>Source Product Group</h5>
+
+<p class="i1">
+    <b>Source product:</b>
+    Here the user specifies the source product.
+    The combo box presents a list of all products opened in the Sentinel Toolbox.
+    The user may select one of these or, by clicking on the button next to the combo box, choose a product
+    from the file system. The selected product must be of type <b>S2_MSI_Level-1C</b>.
+</p>
+
+<h5>Target Product Group</h5>
+
+<p class="i1">
+    <b>Name:</b>
+    Used to specify the name of the target product.
+</p>
+
+<p class="i1">
+    <b>Save as:</b>
+    Used to specify whether the target product should be saved to the file system. The
+    combo box presents a list of available file formats.
+    The text field or the button next to it allow to specify a target directory.
+</p>
+
+<p class="i1">
+    <b>Open in SNAP:</b>
+    Used to specify whether the target product should be opened in the Sentinel Toolbox.
+    When the target product is not saved, it is opened in the Sentinel Toolbox automatically.
+</p>
+
+<p align="center"><img src="images/ProcessingParameters.png"></p>
+
+<h5>Processing Parameters</h5>
+
+<p class="i1">
+    <b>Coverage factor:</b> The value of the coverage factor for the uncertainty
+    evaluation (k=1 means 68.27% probability):
+</p>
+<p class="i1">
+    <b>Band names:</b> Select the bands for which the uncertainty shall be computed.
+</p>
+<p class="i1">
+    <b>Instrument noise:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>OOF straylight-systematic:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>OOF straylight-random:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>Crosstalk:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>ADC quantisation:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>DS stability:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>Gamma knowledge:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>Diffuser-absolute knowledge:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>Diffuser-temporal knowledge:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>Diffuser-cosine effect:</b> <font color="RED">Future reference TBD</font>
+</p>
+<p class="i1">
+    <b>L1C image quantisation:</b> <font color="RED">Future reference TBD</font>
+</p>
 
 <br>
 <hr>

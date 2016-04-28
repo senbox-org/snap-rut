@@ -11,7 +11,7 @@
 
     <version>0.1</version>
     <authors>Javier Gorrono, Norman Fomferra and Marco Peters</authors>
-    <copyright>2015-2017 by National Physical Laboratory and Brockmann Consult GmbH</copyright>
+    <copyright>2015-2016 by National Physical Laboratory and Brockmann Consult GmbH</copyright>
 
     <description>Radiometric uncertainty tool for Sentinel-2 MSI L1C products.</description>
 
