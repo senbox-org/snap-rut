@@ -51,6 +51,7 @@ class S2RutOp:
         for name in self.toa_band_names:
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(), source_band.getRasterHeight())
+            unc_toa_band.setDescription('Uncertainty of ' + name + ' (coverage factor k=' + str(self.rut_algo.k) + ')')
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             rut_product.addBand(unc_toa_band)
