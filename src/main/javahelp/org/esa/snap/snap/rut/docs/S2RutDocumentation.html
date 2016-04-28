@@ -1,5 +1,6 @@
 <!--
-  ~ Copyright (C) 2010 Brockmann Consult GmbH (info@brockmann-consult.de)
+  ~ Copyright (C) 2016 Brockmann Consult GmbH (info@brockmann-consult.de)
+  ~ Copyright (C) 2016 Javier Gorrono, National Physical Laboratory (javier.gorrono@npl.co.uk)
   ~
   ~ This program is free software; you can redistribute it and/or modify it
   ~ under the terms of the GNU General Public License as published by the Free
@@ -16,7 +17,7 @@
 
 <html>
 <head>
-    <title>S2 RUT</title>
+    <title>S2-RUT</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -24,12 +25,22 @@
 <body>
 <table class="header">
     <tr class="header">
-        <td class="header">S2 RUT</td>
+        <td class="header">S2-RUT</td>
         <td class="header" align="right"><img src="images/snap_header.jpg" border=0></td>
     </tr>
 </table>
 
-<h3>Sentinel-2 Radiometric Uncertainty Tool</h3>
+<h3>Sentinel-2 Radiometric Uncertainty Tool (S2-RUT)</h3>
+<p>
+    The S2-RUT produces per-pixel uncertainty of ESA Sentinel-2 L1C MSI products at a specified confidence level. The L1
+    uncertainty budget is based on a detailed L1 radiometric assessment and its combination based on the GUM guidelines.
+    Flexibility as a SNAP processor provides opportunities to: specify confidence level, specify output format,
+    select/deselect contributors.
+</p>
+
+<p><a href="S2RutAlgoSpecification.html">S2-RUT Algorithm Specification </a></p>
+
+<p><a href="S2RutProcessorDescription.html">S2-RUT Processor Documentation</a></p>
 
 <br>
 <hr>

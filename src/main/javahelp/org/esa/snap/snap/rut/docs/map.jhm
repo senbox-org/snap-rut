@@ -5,7 +5,8 @@
 
 <map version="2.0">
 
-    <mapID target="s2rutDoc" url="S2RUTProcessor.html"/>
-    <!-- add more here -->
+    <mapID target="s2rutDoc" url="S2RutDocumentation.html"/>
+    <mapID target="s2rutProc" url="S2RutProcessorDescription.html"/>
+    <mapID target="s2rutAlgo" url="S2RutAlgoSpecification.html"/>
 
 </map>
