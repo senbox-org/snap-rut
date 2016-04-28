@@ -10,6 +10,8 @@ import numpy as np
 import datetime
 import s2_l1_rad_conf as rad_conf
 
+S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
+
 
 class S2RutOp:
     def __init__(self):
@@ -26,7 +28,8 @@ class S2RutOp:
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
 
-        # todo - validate source_product
+        if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
+            raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
 
         self.product_meta, self.datastrip_meta, granules_meta = self.source_product.getMetadataRoot().getElements()
 
