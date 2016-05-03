@@ -30,7 +30,7 @@
             <!-- The name of the parameter; use context.getParameter('coverage_factor') in your Python code to retrieve the value -->
             <name>coverage_factor</name>
             <!-- The description is shown in the help on the command line and also as tooltip in the GUI -->
-            <description>The value of the coverage factor for the uncertainty evaluation (k=1 means 68.27% probability)</description>
+            <description>The value of the coverage factor for the uncertainty evaluation (<i>k</i>=1 means 68.27% probability)</description>
             <!-- The type of the parameter; can be boolean, byte, short, int, long, float, double, java.lang.String -->
             <dataType>double</dataType>
             <!-- The default value of the parameter; this is used if no value is specified by the user -->

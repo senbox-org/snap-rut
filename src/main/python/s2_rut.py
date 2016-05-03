@@ -24,7 +24,6 @@ class S2RutOp:
         self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
         self.sourceBandMap = None
 
-
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
 
@@ -53,14 +52,14 @@ class S2RutOp:
         self.sourceBandMap = {}
         for name in self.toa_band_names:
             source_band = self.source_product.getBand(name)
-            unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(), source_band.getRasterHeight())
+            unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
+                                       source_band.getRasterHeight())
             unc_toa_band.setDescription('Uncertainty of ' + name + ' (coverage factor k=' + str(self.rut_algo.k) + ')')
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             rut_product.addBand(unc_toa_band)
             self.sourceBandMap[unc_toa_band] = source_band
             snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
-
 
         context.setTargetProduct(rut_product)
 
@@ -80,7 +79,6 @@ class S2RutOp:
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
 
         tile.setSamples(unc)
-
 
     def dispose(self, context):
         pass

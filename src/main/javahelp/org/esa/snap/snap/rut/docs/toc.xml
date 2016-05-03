@@ -6,9 +6,11 @@
     <tocitem text="Sentinel Toolbox Application">
         <tocitem text="Optical">
             <tocitem text="Pre-Processing">
-                <tocitem text="Sentinel-2 Radiometric Uncertainty Tool (S2-RUT)" target="s2rutDoc"/>
-                <tocitem text="S2-RUT Processor Documentation" target="s2rutProc"/>
-                <tocitem text="S2-RUT Algorithm Specification" target="s2rutAlgo"/>
+                <tocitem text="Sentinel-2 Radiometric Uncertainty Tool (S2-RUT)" target="s2rutDoc">
+                    <tocitem text="S2-RUT Theoretical Introduction" target="s2rutTheory"/>
+                    <tocitem text="S2-RUT Processor Documentation" target="s2rutProc"/>
+                    <tocitem text="S2-RUT Algorithm Specification" target="s2rutAlgo"/>
+                </tocitem>
             </tocitem>
         </tocitem>
     </tocitem>
