@@ -61,7 +61,7 @@ For general help on using gpt call:
 > gpt -h
 ```  
 
-## How to Configure SNAP to pick up the build output automatically.
+## How to Configure SNAP to pick up the build output automatically
 
 Find the `etc` folder in the SNAP installation directory. Inside this directory you will find the `snap.conf` file.
 Change the access right of it so that you are allowed to make changes to it.
