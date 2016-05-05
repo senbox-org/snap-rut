@@ -31,26 +31,146 @@
 </table>
 
 
-<h4>Description of class S2RutOp</h4>
+<h3>Description of class S2RutOp</h3>
 
-<h3>Step 1: Initialize function</h3>
-<p>Text describing this</p>
-<h3>Step 2: computeTile function</h3>
+<h4>Step 1: Initialize function</h4>
 
-<h4>Description of class S2RutAlgo</h4>
+<p>This function defines the product reading, the setup of the uncertainty product output and the global parameters
+    extraction. Specific tasks:</p>
+<ul style="list-style-type:square">
+    <li>The source product is read (<code>source_product</code>) and verified as a valid Sentinel-2 product.
+    </li>
+    <li>Parsing Sentinel-2 metadata at three levels: <code>product_meta</code>, <code>datastrip_meta</code> and
+        <code>granule_meta</code>.
+    </li>
+    <li>Extraction of global metadata parameters: distance to sun (<code>u_sun</code>),reflectance quantification
+        (<code>quant</code>) and
+        mean sun zenith angle (<code>tecta</code>). Note: next versions of the tool to include the per-pixel sun zenith
+        angle.
+    </li>
+    <li>Extraction of user parameters: selected bands (<code>toa_band_names</code>), coverage factor (<code>k</code>)
+        and uncertainty contributors flags (<code>unc_select</code>).
+    </li>
+    <li>Setup of the uncertainty product including L1C <code>scene_width</code>, <code>scene_height</code> and
+        geolocation: <code>rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width,
+            scene_height)</code>
+    </li>
+    <li>Add each one of the selected bands (<code>unc_toa_band</code>) in the uncertainty product with the correct name
+        and Nodata value.
+    </li>
+</ul>
 
-<h3>Step 1: Initial check</h3>
-<h3>Step 2: Undo reflectance conversion</h3>
-<h3>Step 3: Orthorectification process</h3>
-<h3>Step 4: L1B uncertainty contributors: raw and dark signal</h3>
-<h3>Step 5: L1B uncertainty contributors: gamma correction</h3>
-<h3>Step 6: L1C uncertainty contributors: absolute calibration coefficient</h3>
-<h3>Step 7: L1C uncertainty contributors: absolute calibration coefficient</h3>
-<h3>Step 8: L1C uncertainty contributors: reflectance conversion</h3>
-<h3>Step 9: Combine uncertainty contributors</h3>
-<h3>Step 10: Append uncertainty information to the metadata</h3>
+<h4>Step 2: computeTile function</h4>
 
+<p>This function selects the specific band in a tile, extracts the required parameters and sets the uncertainty samples
+    after calling the S2RutAlgo operator. Specific tasks:</p>
+<ul style="list-style-type:square">
+    <li>Selects the <code>source_band</code> and <code>toa_band_id</code>.
+    </li>
+    <li>Extracts the metadata parameters for the specific band: absolute calibration coefficient (<code>a</code>), sun
+        irradiance (<code>e_sun</code>), noise model coefficients (<code>alpha</code> and <code>beta</code>), and
+        estimated diffuser degradation (<code>u_diff_temp</code>).
+    </li>
+    <li>Extracts the L1C samples <code>toa_samples</code>
+    </li>
+    <li>Call the S2RutAlgo for the per-pixel uncertainty calculation
+        <code>unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)</code>
+    </li>
+    <li>Set the samples in the destination <code>tile</code>
+    </li>
+</ul>
 
+<h3>Description of class S2RutAlgo</h3>
+
+<h4>Step 1: Initial check</h4>
+<p>This step identifies No data, cloud, defective or saturated pixels.</p>
+<p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
+
+<h4>Step 2: Undo reflectance conversion</h4>
+<p>This step converts the L1C reflectance in L1B <i>CN</i> counts.</p>
+<code>cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (
+    math.pi * self.quant)) * band_data.</code>
+<p>Warning raised if <code>tecta</code> &gt 70&deg. Conversion error can be &gt 5%</p>
+
+<h4>Step 3: Orthorectification process</h4>
+<p>This step evaluates the impact of the uncertainty propagation through the resampling process.</p>
+<p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
+
+<h4>Step 4: L1B uncertainty contributors: raw and dark signal</h4>
+<p><b>NOTE: Each the following uncertainty contributors are pre-checked and included if <code>unc_select</code> == True</b>
+</p>
+
+<ul style="list-style-type:square">
+    <li><p>Noise in % units</p>
+        <code>u_noise = 100 * np.sqrt(self.alpha ** 2 + self.beta * cn) / cn</code>
+    </li>
+    <li><p>Out-of field straylight - systematic in radiance units</p>
+        <code>u_stray_sys = 0.3 * rad_conf.Lref[band_id] / 100</code>
+    </li>
+    <li><p>Out-of field straylight - random in % units</p>
+        <code>u_stray_rand = rad_conf.u_stray_rand_all[band_id]</code>
+    </li>
+    <li><p>Crosstalk in radiance units</p>
+        <code>u_xtalk = rad_conf.u_xtalk_all[band_id]</code>
+    </li>
+    <li><p>Instrument quantisation. Defined in <code>_init_</code> function.</p>
+        <code>self.u_ADC = 0.5</code>
+    </li>
+    <li><p>Predefined DS stability in LSB units</p>
+        <code>u_DS = rad_conf.u_DS_all[band_id]</code>
+    </li>
+</ul>
+
+<h4>Step 5: L1B uncertainty contributors: gamma correction</h4>
+<p>Predefined relative gains residual in % units</p>
+<code>u_gamma = 0.4</code>
+
+<h4>Step 6: L1C uncertainty contributors: absolute calibration coefficient</h4>
+<ul style="list-style-type:square">
+    <li><p>Pre-flight diffuser reflectance knowledge in % units</p>
+        <code>u_diff_abs = rad_conf.u_diff_absarray[band_id]</code>
+    </li>
+    <li><p><code>u_diff_temp</code> calculated in <code>computeTile</code> function(see above)</p>
+    </li>
+    <li><p>Cosine diffuser knowledge. Defined in <code>_init_</code> function.</p>
+        <code>self.u_diff_cos = 0.4</code>
+    </li>
+    <li><p>Diffuser straylight residual correction. Defined in <code>_init_</code> function.</p>
+        <code>self.u_diff_k = 0.3</code>
+    </li>
+</ul>
+
+<h4>Step 7: L1C uncertainty contributors: reflectance conversion</h4>
+<p>Impact of the reflectance factor digitisation in % units</p>
+<code>u_ref_quant = 100 * (0.5 / math.sqrt(3)) / band_data</code>
+
+<h4>Step 8: Combine uncertainty contributors</h4>
+<ul style="list-style-type:square">
+    <li><p>Calculation of the terms u'<sub>DS</sub> and u'<sub>ADC</sub></p>
+        <code>u_adc = (100 * self.u_ADC / math.sqrt(3)) / cn </code>; <code>u_ds = (100 * u_DS) / cn</code>
+    </li>
+    <li><p>Calculation of the straylight term and conversion of the crosstalk into % units</p>
+        <code>u_stray = np.sqrt(u_stray_rand ** 2 + ((100 * self.a * u_xtalk) / cn) ** 2)</code>
+    </li>
+    <li><p>Calculation of the diffuser uncertainty</p>
+        <code>u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)</code>
+    </li>
+    <li><p>Calculation of the standard uncertainty</p>
+        <code>u_1sigma = np.sqrt(u_ref_quant ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
+            u_noise ** 2 + u_adc ** 2 + u_ds ** 2)</code>
+    </li>
+    <li><p>Calculation of the expanded uncertainty in % units. Conversion of the Out-of-Field Straylight - systematic in
+        % units. Resulting uncertainty values multiplied by 10</p>
+        <code>u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)</code>
+    </li>
+    <li><p>Clipping all the values to range [0,250] for uncertainty image UINT8 type</p>
+        <code>u_ref = np.uint8(np.clip(u_expand, 0, 250))</code>
+    </li>
+</ul>
+
+<h4>Step 9: Append uncertainty information to the metadata</h4>
+<p>This step integrates relevant information (e.g. mean pixel uncertainty) in the uncertainty product metadata.</p>
+<p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
 
 <br>
 <hr>
