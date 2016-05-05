@@ -36,8 +36,7 @@ If you encounter test failures:
 
 The build creates a SNAP plugin module file `<project_dir>/target/nbm/snap-rut-<version>.nbm`
 
-How to install and run the processor as SNAP plugin 
----------------------------------------------------
+## How to install and run the processor as SNAP plugin
 
 Start SNAP (Desktop UI) and find the plugin manager in the main menu at 
 > **Tools / Plugins**
@@ -51,7 +50,7 @@ Then
 * restart SNAP.
 * 
 Once the S2-RUT processor is installed into SNAP it can be run from the SNAP Desktop UI's main menu at
-> **Optical / Preprocessing / Sentinel-2 Radiometric Uncertainty Tool
+**Optical / Preprocessing / Sentinel-2 Radiometric Uncertainty Tool**
   
 Or in batch mode using SNAP's `gpt` command-line tool found in `${SNAP_HOME}/bin`:
 ```
@@ -62,27 +61,15 @@ For general help on using gpt call:
 > gpt -h
 ```  
 
-# THIS following needs review
+## How to Configure SNAP to pick up the build output automatically
 
-## Modifying, running and debugging the processor code
-This section explains how to run and debug the S2-RUT processor code from a Java IDE without having to install the plugin into SNAP.
+Find the `etc` folder in the SNAP installation directory. Inside this directory you will find the `snap.conf` file.
+Change the access right of it so that you are allowed to make changes to it.
+There you will find the `extra_clusters` property.
+Specify the path, to the cluster folder of the build output directory.
+```
+extra_clusters="<project_dir>/target/nbm/netbeans/snap"
+```
+Ensure to remove the '**#**' character at the beginning of the line.
 
-You will need to install
-* SNAP with the Sentinel-2 Toolbox (S2TBX) from http://step.esa.int/main/download/
-* PyCharm (Community Edition) IDE from https://www.jetbrains.com/pycharm/download/
-
-Start PyCharm and select **File / New / Project from Existing Sources**. Select the `pom.xml` (Maven project file) in the source directory. Leave all default settings as they are and click **Next** until PyCharm asks for the JDK. Select the installed JDK from above and finish the dialog.
-
-From the main menu select **Run / Edit Configurations**. In the dialog click the **+** (add) button and select **JAR Application**. Then the settings are as follows:
-
-* **Name**: SNAP Desktop
-* **Path to JAR:** `${SNAP_HOME}/snap/snap/core/snap-main.jar`
-* **VM options:** `-Xmx4G -Dorg.netbeans.level=INFO -Dsun.java2d.noddraw=true -Dsun.awt.nopixfmt=true -Dsun.java2d.dpiaware=false` 
-* **Program arguments:** `--userdir ${S2RUT_HOME}/target/testdir --clusters ${S2RUT_HOME}/target/nbm/netbeans/extra --patches ${S2RUT_HOME}/$/target/classes`
-* **Working directory:** `${SNAP_HOME}`
-
-where 
-
-* `${SNAP_HOME}` must be replaced by your SNAP installation directory
-* `${S2RUT_HOME}` must be replaced by your S2RUT project directory (where the `pom.xml` is located in)
-
+Now when you start SNAP the build output is automatically used by SNAP and you can test the latest builds.
