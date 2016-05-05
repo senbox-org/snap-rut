@@ -30,23 +30,93 @@
     </tr>
 </table>
 
-<h3>S2 L1 radiometric model</h3>
-<p></p>
+<p><b>NOTE:</b> This is a short theoretical introduction in order to provide the users with the basics of the
+    radiometric analysis and uncertainty theory behind the tool. It is foreseen in the short-term a publication with an
+    extensive theoretical description.
+</p>
 
-<p align="center"><img src="images/s2_L1proc_chain.png"></p>
+<h3>S2 L1 radiometric model</h3>
+<p>The radiometric uncertainty analysis starts by identifying the different steps in the Sentinel-2 MSI instrument and
+    L1 processing chain. The figure below displays graphically these steps. The complete Sentinel-2 L1 radiometric model
+    can be found in [1]</p>
+
+<p align="center">
+    <img src="images/s2_L1proc_chain.png" width="525" height="326" border="0">
+</p>
 
 <h3>S2 L1 uncertainty contributions</h3>
+From the previous radiometric model, it is possible to identify the sources of uncertainty at each step of the
+processing chain. The table shows the uncertainty contributions for the L1C product with the associated parameter in the
+model. The contributions in dark orange are included in RUTv1. The contributions with negligible impact are shown in
+light orange and, in white, the contributions to be included in next versions.
 
-<p align="center"><img src="images/s2RUTv1_contributors_list.png"></p>
-
+<p align="center"><img src="images/s2RUTv1_contributors_list.png" width="537" height="357" border="0"></p>
 
 <h3>S2 L1 uncertainty combination</h3>
+<p>The model follows the GUM [2] to combine the L1 radiometric uncertainty. The equation for the expanded uncertainty
+    (i.e. the uncertainty at a defined coverage probability) is:
+</p>
 
-<h4>S2 L1 uncertainty equations</h4>
+<p align="center">
+    <img src="images/s2RUT_expanded_unc.png" width="709" height="69" border="0">
+</p>
 
-<h4>S2 L1 uncertainty validation</h4>
+<p>Two uncorrected systematic effects enlarge ONLY the expanded uncertainty.</p>
+<p>No significant correlation between contributors has been identified due to the independent nature of the L1
+    parameters. This simplifies the combination of the standard uncertainty as shown.</p>
 
-<p></p>
+<p align="center">
+    <img src="images/s2RUT_standard_uncertainty.png" width="745" height="57" border="0">
+</p>
+
+<p>The same concept can be applied to the different terms in the standard uncertainty combination model:</p>
+
+<p align="center">
+    <img src="images/s2RUT_diff_unc.png" width="487" height="43" border="0">
+</p>
+<p align="center">
+    <img src="images/s2RUT_stray_unc.png" width="373" height="75" border="0">
+</p>
+<p align="center">
+    <img src="images/s2RUT_LSB_unc.png" width="345" height="72" border="0">
+</p>
+
+<h3>S2 L1 uncertainty combination validation</h3>
+
+<h4>Validation of the central limit theorem and normal distribution</h4>
+<p>The GUM model relies on the assumption that a generalised central limit theorem applies to the combination model. In
+    those circumstances, the standard uncertainty can be associated to the normal distribution and a specific coverage
+    probability can be determined. An initial comparison to the Monte-Carlo method in [3] determined the validity of the
+    normal distribution except at very low radiance levels (i.e. close to L<sub>min</sub>) levels). A more extensive
+    validation is under study to further specify these limits.</p>
+
+<h4>Impact of the sensitivity coefficient</h4>
+
+<p>The terms u'<sub>DS</sub> and u'<sub>ADC</sub> are further calculated as follows:</p>
+
+<p align="center">
+    <img src="images/s2RUT_adcds_unc.png" width="466" height="97" border="0">
+</p>
+
+<p>The sensitivity coefficient <i>c<sub>y</sub></i> requires the use of a per-pixel relative gains coefficients. A study
+    of its value showed that the coefficient ranges around 1 &plusmn 10%. Thus, the impact at the expanded uncertainty
+    can be considered negligible and the sensitivity coefficient in the RUTv1 is set to 1.
+</p>
+
+<h3>References</h3>
+
+<ul style="list-style-type:square">
+    <li><b>[1]</b> ESA. (2015). "Sentinel-2 MSI Technical Guide." from
+        https://sentinel.esa.int/web/sentinel/technical-guides/sentinel-2-msi
+    </li>
+    <li><b>[2]</b> BIPM, IEC, IFCC, ILAC, ISO, IUPAC, IUPAP and OIML (2008). Guide to the Expression of Uncertainty in
+        Measurement, JCGM 100:2008.
+    </li>
+    <li><b>[3]</b> Javier Gorroño ; Ferran Gascon ; Nigel P. Fox; Radiometric uncertainty per pixel for the Sentinel-2
+        L1C products. Proc. SPIE 9639, Sensors, Systems, and Next-Generation Satellites XIX, 96391G (October 12, 2015)
+    </li>
+</ul>
+
 
 <br>
 <hr>

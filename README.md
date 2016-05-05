@@ -68,10 +68,10 @@ For general help on using gpt call:
 This section explains how to run and debug the S2-RUT processor code from a Java IDE without having to install the plugin into SNAP.
 
 You will need to install
-* SNAP with the Sentinel-2 Toolbox (S3TBX) from http://step.esa.int/main/download/
+* SNAP with the Sentinel-2 Toolbox (S2TBX) from http://step.esa.int/main/download/
 * PyCharm (Community Edition) IDE from https://www.jetbrains.com/pycharm/download/
 
-Start PyCharm and select **File / New / Project from Existing Sources**. Select the `pom.xml` (Maven project file) in the source directory. Leve all default settings as they are and click **Next** until PyCharm asks for the JDK. Select the installed JDK from above and finish the dialog.
+Start PyCharm and select **File / New / Project from Existing Sources**. Select the `pom.xml` (Maven project file) in the source directory. Leave all default settings as they are and click **Next** until PyCharm asks for the JDK. Select the installed JDK from above and finish the dialog.
 
 From the main menu select **Run / Edit Configurations**. In the dialog click the **+** (add) button and select **JAR Application**. Then the settings are as follows:
 
