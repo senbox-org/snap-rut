@@ -22,7 +22,7 @@ class S2RutOp:
         self.unc_band = None
         self.toa_band = None
         self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
-        self.sourceBandMap = None
+        self.target_source_map = None
 
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
@@ -49,7 +49,7 @@ class S2RutOp:
 
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
         snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
-        self.sourceBandMap = {}
+        self.target_source_map = {}
         for name in self.toa_band_names:
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
@@ -58,13 +58,13 @@ class S2RutOp:
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             rut_product.addBand(unc_toa_band)
-            self.sourceBandMap[unc_toa_band] = source_band
+            self.target_source_map[unc_toa_band] = source_band
             snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
 
         context.setTargetProduct(rut_product)
 
-    def computeTile(self, context, band, tile):
-        source_band = self.sourceBandMap[band]
+    def computeTile(self, context, target_band, tile):
+        source_band = self.target_source_map[target_band]
         toa_band_id = source_band.getSpectralBandIndex() - 1
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
