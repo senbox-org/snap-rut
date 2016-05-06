@@ -10,6 +10,7 @@ import numpy as np
 import datetime
 import s2_l1_rad_conf as rad_conf
 
+SUN_AZIMUTH_BAND_NAME = "sun_azimuth"
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 
 
@@ -30,17 +31,12 @@ class S2RutOp:
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
 
-        self.product_meta, self.datastrip_meta, granules_meta = self.source_product.getMetadataRoot().getElements()
-
-        # todo - check if there is a granule
-
-        granule_meta = [i for i in granules_meta.getElements()][0]
+        self.product_meta, self.datastrip_meta = self.source_product.getMetadataRoot().getElements()
 
         self.toa_band_names = context.getParameter('band_names')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
-        self.rut_algo.tecta = self.get_tecta(granule_meta)
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
@@ -74,9 +70,12 @@ class S2RutOp:
 
         toa_tile = context.getSourceTile(source_band, tile.getRectangle())
         toa_samples = toa_tile.getSamplesInt()
+        sun_azimuth_tile = context.getSourceTile(self.source_product.getBand(SUN_AZIMUTH_BAND_NAME), tile.getRectangle())
+        sun_azimuth_samples = sun_azimuth_tile.getSamplesFloat()
 
         # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
+        unc = self.rut_algo.unc_calculation(toa_band_id, np.array(toa_samples, dtype=np.uint16),
+                                            np.array(sun_azimuth_samples, dtype=np.float32))
 
         tile.setSamples(unc)
 
@@ -92,11 +91,6 @@ class S2RutOp:
         return (product_meta.getElement('General_Info').
                 getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
-
-    def get_tecta(self, granule_meta):
-        return (granule_meta.getElement('Geometric_info').
-                getElement('Tile_Angles').getElement('Mean_Sun_Angle').
-                getAttributeDouble('ZENITH_ANGLE'))
 
     def get_e_sun(self, product_meta, band_id):
         return float([i for i in product_meta.getElement('General_Info').
