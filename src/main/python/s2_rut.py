@@ -34,13 +34,15 @@ class S2RutOp:
 
         # todo - check if there is a granule
 
-        granule_meta = [i for i in granules_meta.getElements()][0]
 
         self.toa_band_names = context.getParameter('band_names')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
-        self.rut_algo.tecta = self.get_tecta(granule_meta)
+        tecta = 0.0
+        for granule_meta in granules_meta.getElements():
+            tecta += self.get_tecta(granule_meta)
+        self.rut_algo.tecta = tecta / granules_meta.getNumElements()
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
