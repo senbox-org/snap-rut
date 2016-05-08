@@ -21,6 +21,7 @@ class S2RutAlgo:
         self.a = 0.0
         self.e_sun = 0.0
         self.u_sun = 1.0
+        self.tecta = 0.0
         self.quant = 10000.0
         self.alpha = 0.0
         self.beta = 0.0
@@ -29,11 +30,11 @@ class S2RutAlgo:
         self.u_diff_temp = 1.0  # [%] as a conservative residual (AIRBUS 2015)
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1
-        # list of booleans with user selected uncertainty sources(order as in interface)
-        self.unc_select = [True, True, True, True, True, True, True, True, True, True, True, True]
         self.tecta_warning = False
+        self.unc_select = [True, True, True, True, True, True, True, True, True, True, True,
+                           True]  # list of booleans with user selected uncertainty sources(order as in interface)
 
-    def unc_calculation(self, band_id, band_data, sun_azimuth_data):
+    def unc_calculation(self, band_data, band_id):
         """
         This function represents the core of the RUTv1.
         It takes as an input the pixel data of a specific band and tile in
@@ -44,15 +45,14 @@ class S2RutAlgo:
         can be found in the tool github. Also there a more detailed explanation
         of the theoretical background can be found.
 
-        :param band_id: zero-based index of the band
         :param band_data: list with the quantized L1C reflectance pixels of a band (flattened; 1-d)
-        :param sun_azimuth_data: list with the sun azimuth angles for each pixel
+        :param band_id: zero-based index of the band
         :return: list of u_int8 with uncertainty associated to each pixel.
         """
 
-        #######################################################################        
+        #######################################################################
         # 1.	Initial check
-        #######################################################################        
+        #######################################################################
         # a.	Cloud pixel
         # b.	pixel_value == 0, [product metadata] General_Info/Product_Image_Characteristics/
         # Special_Values/SPECIAL_VALUE_TEXT [NODATA]
@@ -68,14 +68,13 @@ class S2RutAlgo:
         #    [datastrip metadata]
         #    Image_Data_Info/Sensor_Configuration/Acquisition_Configuration/
         #    Spectral_Band_Info/Spectral_Band_Information [bandId]/ PHYSICAL_GAINS
-        tecta = np.mean(sun_azimuth_data)
-        if tecta > 70 and not self.tecta_warning:  # (see RUT DPM DISCUSSION for explanation and alternative)
+        if self.tecta > 70 and not self.tecta_warning:  # (see RUT DPM DISCUSSION for explanation and alternative)
             self.tecta_warning = True
-            print('Tile mean SZA is' + str(tecta) + '-->conversion error >5%')
+            print('Tile mean SZA is' + str(self.tecta) + '-->conversion error >5%')
 
         # Replace the reflectance factors by CN values
-        cn = (self.a * self.e_sun * self.u_sun * np.cos(np.radians(sun_azimuth_data)) /
-              (math.pi * self.quant)) * band_data
+        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (
+            math.pi * self.quant)) * band_data
 
         #######################################################################
         # 3.	Orthorectification process

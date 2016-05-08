@@ -10,7 +10,6 @@ import numpy as np
 import datetime
 import s2_l1_rad_conf as rad_conf
 
-SUN_AZIMUTH_BAND_NAME = "sun_azimuth"
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 
 
@@ -23,7 +22,7 @@ class S2RutOp:
         self.unc_band = None
         self.toa_band = None
         self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
-        self.target_source_map = None
+        self.sourceBandMap = None
 
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
@@ -31,12 +30,17 @@ class S2RutOp:
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
 
-        self.product_meta, self.datastrip_meta = self.source_product.getMetadataRoot().getElements()
+        self.product_meta, self.datastrip_meta, granules_meta = self.source_product.getMetadataRoot().getElements()
+
+        # todo - check if there is a granule
+
+        granule_meta = [i for i in granules_meta.getElements()][0]
 
         self.toa_band_names = context.getParameter('band_names')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
+        self.rut_algo.tecta = self.get_tecta(granule_meta)
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
@@ -45,7 +49,7 @@ class S2RutOp:
 
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
         snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
-        self.target_source_map = {}
+        self.sourceBandMap = {}
         for name in self.toa_band_names:
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
@@ -54,13 +58,13 @@ class S2RutOp:
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             rut_product.addBand(unc_toa_band)
-            self.target_source_map[unc_toa_band] = source_band
+            self.sourceBandMap[unc_toa_band] = source_band
             snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
 
         context.setTargetProduct(rut_product)
 
-    def computeTile(self, context, target_band, tile):
-        source_band = self.target_source_map[target_band]
+    def computeTile(self, context, band, tile):
+        source_band = self.sourceBandMap[band]
         toa_band_id = source_band.getSpectralBandIndex() - 1
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
@@ -70,12 +74,9 @@ class S2RutOp:
 
         toa_tile = context.getSourceTile(source_band, tile.getRectangle())
         toa_samples = toa_tile.getSamplesInt()
-        sun_azimuth_tile = context.getSourceTile(self.source_product.getBand(SUN_AZIMUTH_BAND_NAME), tile.getRectangle())
-        sun_azimuth_samples = sun_azimuth_tile.getSamplesFloat()
 
         # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(toa_band_id, np.array(toa_samples, dtype=np.uint16),
-                                            np.array(sun_azimuth_samples, dtype=np.float32))
+        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
 
         tile.setSamples(unc)
 
@@ -91,6 +92,11 @@ class S2RutOp:
         return (product_meta.getElement('General_Info').
                 getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
+
+    def get_tecta(self, granule_meta):
+        return (granule_meta.getElement('Geometric_info').
+                getElement('Tile_Angles').getElement('Mean_Sun_Angle').
+                getAttributeDouble('ZENITH_ANGLE'))
 
     def get_e_sun(self, product_meta, band_id):
         return float([i for i in product_meta.getElement('General_Info').
