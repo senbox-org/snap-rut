@@ -30,7 +30,10 @@ class S2RutOp:
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
 
-        self.product_meta, self.datastrip_meta, granules_meta = self.source_product.getMetadataRoot().getElements()
+        metadata_root = self.source_product.getMetadataRoot()
+        self.product_meta = metadata_root.getElement('Level-1C_User_Product')
+        self.datastrip_meta = metadata_root.getElement('Level-1C_DataStrip_ID')
+        granules_meta = metadata_root.getElement('Granules')
 
         # todo - check if there is a granule
 
