@@ -78,10 +78,10 @@ class S2RutOp:
         self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
 
         toa_tile = context.getSourceTile(source_band, tile.getRectangle())
-        toa_samples = toa_tile.getSamplesInt()
+        toa_samples = toa_tile.getSamplesFloat()
 
         # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)
+        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
 
         tile.setSamples(unc)
 
@@ -112,9 +112,9 @@ class S2RutOp:
 
     def get_u_diff_temp(self, datastrip_meta, band_id):
         # START or STOP time has no effect. We provide a degradation based on MERIS year rates
-        time_start = datetime.datetime.strptime(datastrip_meta.getElement('General_Info').
-                                                getElement('Datastrip_Time_Info').
-                                                getAttributeString('DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
+        time_start = datetime.datetime.strptime(
+            datastrip_meta.getElement('General_Info').getElement('Datastrip_Time_Info').getAttributeString(
+                'DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
         return (time_start - self.time_init).days / 365.25 * rad_conf.u_diff_temp_rate[band_id]
 
     def get_beta(self, datastrip_meta, band_id):

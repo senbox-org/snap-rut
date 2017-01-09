@@ -73,8 +73,7 @@ class S2RutAlgo:
             print('Tile mean SZA is' + str(self.tecta) + '-->conversion error >5%')
 
         # Replace the reflectance factors by CN values
-        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (
-            math.pi * self.quant)) * band_data
+        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / math.pi) * band_data
 
         #######################################################################
         # 3.	Orthorectification process
@@ -147,7 +146,7 @@ class S2RutAlgo:
         #######################################################################
 
         if self.unc_select[11]:
-            u_ref_quant = 100 * (0.5 / math.sqrt(3)) / band_data  # [%]scaling 0-1 in steps number=quant
+            u_ref_quant = 100 * (0.5 / math.sqrt(3)) / (self.quant * band_data)  # [%]scaling 0-1 in steps number=quant
         else:
             u_ref_quant = 0
 
