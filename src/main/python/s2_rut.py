@@ -10,6 +10,9 @@ import numpy as np
 import datetime
 import s2_l1_rad_conf as rad_conf
 
+# necessary for logging
+#from snappy import SystemUtils
+
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 
 
@@ -49,12 +52,8 @@ class S2RutOp:
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
-        scene_width = self.source_product.getSceneRasterWidth()
-        scene_height = self.source_product.getSceneRasterHeight()
-
-        rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width, scene_height)
-        snappy.ProductUtils.copyGeoCoding(self.source_product, rut_product)
         self.sourceBandMap = {}
+        targetBandList = []
         for name in self.toa_band_names:
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
@@ -62,13 +61,24 @@ class S2RutOp:
             unc_toa_band.setDescription('Uncertainty of ' + name + ' (coverage factor k=' + str(self.rut_algo.k) + ')')
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
-            rut_product.addBand(unc_toa_band)
+            targetBandList.append(unc_toa_band)
             self.sourceBandMap[unc_toa_band] = source_band
             snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
+
+        masterband = self.get_masterband(targetBandList)
+        rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT',
+                                     masterband.getRasterWidth(), masterband.getRasterHeight())
+        snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
+        for band in targetBandList:
+            rut_product.addBand(band)
 
         context.setTargetProduct(rut_product)
 
     def computeTile(self, context, band, tile):
+        # Logging template
+        # SystemUtils.LOG.info('target band name: ' + band.getName())
+        # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
+
         source_band = self.sourceBandMap[band]
         toa_band_id = source_band.getSpectralBandIndex() - 1
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
@@ -149,3 +159,12 @@ class S2RutOp:
                  context.getParameter('Gamma_knowledge'), context.getParameter('Diffuser-absolute_knowledge'),
                  context.getParameter('Diffuser-temporal_knowledge'), context.getParameter('Diffuser-cosine_effect'),
                  context.getParameter('Diffuser-straylight_residual'), context.getParameter('L1C_image_quantisation')])
+
+    def get_masterband(self, targetBandList):
+        product_width = -1
+        band_index = -1
+        for index, band in enumerate(targetBandList):
+            width = band.getRasterWidth()
+            if width > product_width:
+                band_index = index
+        return targetBandList[band_index]
