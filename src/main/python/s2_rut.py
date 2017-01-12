@@ -161,10 +161,11 @@ class S2RutOp:
                  context.getParameter('Diffuser-straylight_residual'), context.getParameter('L1C_image_quantisation')])
 
     def get_masterband(self, targetBandList):
-        product_width = -1
+        max_width = -1
         band_index = -1
         for index, band in enumerate(targetBandList):
             width = band.getRasterWidth()
-            if width > product_width:
+            if width > max_width:
                 band_index = index
+                max_width = width
         return targetBandList[band_index]
