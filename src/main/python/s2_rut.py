@@ -14,6 +14,7 @@ import s2_l1_rad_conf as rad_conf
 #from snappy import SystemUtils
 
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
+S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
 
 
 class S2RutOp:
@@ -55,6 +56,10 @@ class S2RutOp:
         self.sourceBandMap = {}
         targetBandList = []
         for name in self.toa_band_names:
+            # TODO - Change the interface so that undesired bands (e.g azimuth) are not shown.
+            if not name in S2_BAND_NAMES: # The band name is checked to confirm it is valid band.
+                raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
+
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
                                        source_band.getRasterHeight())
