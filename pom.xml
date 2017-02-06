@@ -22,7 +22,7 @@
 
     <groupId>org.esa.snap</groupId>
     <artifactId>snap-rut</artifactId>
-    <version>0.10-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>nbm</packaging>
     <name>S2 Radiometric Uncertainty Tool</name>
     <description>Radiometric uncertainty propagation for optical Sentinel-2 L1C MSI radiance data</description>
