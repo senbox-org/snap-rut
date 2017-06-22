@@ -88,7 +88,7 @@ class S2RutOp:
         # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
 
         source_band = self.sourceBandMap[band]
-        toa_band_id = np.int(source_band.getSpectralBandIndex())
+        toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
         self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
