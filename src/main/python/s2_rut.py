@@ -43,9 +43,9 @@ class S2RutOp:
 
 
         self.toa_band_names = context.getParameter('band_names')
-        # if not self.toa_band_names:
-        #     raise RuntimeError(
-        #         'No S2 bands were selected. Please select the S2 bands from the "Processing parameters" tab')
+        if not self.toa_band_names:
+            raise RuntimeError(
+                'No S2 bands were selected. Please select the S2 bands from the "Processing parameters" tab')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
