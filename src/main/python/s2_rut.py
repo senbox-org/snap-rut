@@ -11,7 +11,7 @@ import datetime
 import s2_l1_rad_conf as rad_conf
 
 # necessary for logging
-#from snappy import SystemUtils
+# from snappy import SystemUtils
 
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
@@ -43,6 +43,9 @@ class S2RutOp:
 
 
         self.toa_band_names = context.getParameter('band_names')
+        # if not self.toa_band_names:
+        #     raise RuntimeError(
+        #         'No S2 bands were selected. Please select the S2 bands from the "Processing parameters" tab')
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
@@ -57,7 +60,7 @@ class S2RutOp:
         targetBandList = []
         for name in self.toa_band_names:
             # TODO - Change the interface so that undesired bands (e.g azimuth) are not shown.
-            if not name in S2_BAND_NAMES: # The band name is checked to confirm it is valid band.
+            if not name in S2_BAND_NAMES:  # The band name is checked to confirm it is valid band.
                 raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
 
             source_band = self.source_product.getBand(name)
@@ -85,7 +88,7 @@ class S2RutOp:
         # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
 
         source_band = self.sourceBandMap[band]
-        toa_band_id = source_band.getSpectralBandIndex() - 1
+        toa_band_id = np.int(source_band.getSpectralBandIndex())
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
         self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
