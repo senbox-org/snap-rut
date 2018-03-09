@@ -10,7 +10,7 @@
                 <attr name="dialogTitle" stringvalue="Sentinel-2 Radiometric Uncertainty Tool"/>
                 <attr name="targetProductNameSuffix" stringvalue="_rut"/>
                 <attr name="ShortDescription"
-                      stringvalue="Radiometric uncertainty propagation for optical level-1 radiance data"/>
+                      stringvalue="Radiometric uncertainty estimates for Sentinel 2 Level-1C data"/>
                 <attr name="helpId" stringvalue="s2rutDoc"/>
             </file>
         </folder>

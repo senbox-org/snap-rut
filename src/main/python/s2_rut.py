@@ -27,6 +27,7 @@ class S2RutOp:
         self.toa_band = None
         self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
         self.sourceBandMap = None
+        self.targetBandList = []
 
     def initialize(self, context):
         self.source_product = context.getSourceProduct()
@@ -40,7 +41,6 @@ class S2RutOp:
         granules_meta = metadata_root.getElement('Granules')
 
         # todo - check if there is a granule
-
 
         self.toa_band_names = context.getParameter('band_names')
         if not self.toa_band_names:
@@ -57,7 +57,6 @@ class S2RutOp:
         self.rut_algo.unc_select = self.get_unc_select(context)
 
         self.sourceBandMap = {}
-        targetBandList = []
         for name in self.toa_band_names:
             # TODO - Change the interface so that undesired bands (e.g azimuth) are not shown.
             if not name in S2_BAND_NAMES:  # The band name is checked to confirm it is valid band.
@@ -69,39 +68,60 @@ class S2RutOp:
             unc_toa_band.setDescription('Uncertainty of ' + name + ' (coverage factor k=' + str(self.rut_algo.k) + ')')
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
-            targetBandList.append(unc_toa_band)
+            self.targetBandList.append(unc_toa_band)
             self.sourceBandMap[unc_toa_band] = source_band
             snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
 
-        masterband = self.get_masterband(targetBandList)
+        masterband = self.get_masterband(self.targetBandList)
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT',
                                      masterband.getRasterWidth(), masterband.getRasterHeight())
         snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
-        for band in targetBandList:
+        for band in self.targetBandList:
             rut_product.addBand(band)
 
         context.setTargetProduct(rut_product)
 
-    def computeTile(self, context, band, tile):
-        # Logging template
-        # SystemUtils.LOG.info('target band name: ' + band.getName())
-        # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
+    # NOTE: this is the deprecated function from S2-RUT v1.x
+    # def computeTile(self, context, band, tile):
+    #     # Logging template
+    #     # SystemUtils.LOG.info('target band name: ' + band.getName())
+    #     # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
+    #
+    #     source_band = self.sourceBandMap[band]
+    #     toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+    #     self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
+    #     self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
+    #     self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
+    #     self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
+    #     self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
+    #
+    #     toa_tile = context.getSourceTile(source_band, tile.getRectangle())
+    #     toa_samples = toa_tile.getSamplesFloat()
+    #
+    #     # this is the core where the uncertainty calculation should grow
+    #     unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
+    #
+    #     tile.setSamples(unc)
 
-        source_band = self.sourceBandMap[band]
-        toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
-        self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
-        self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
-        self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
-        self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
-        self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
+    def computeTileStack(self, context, target_tiles, target_rectangle):
+        for targetband in self.targetBandList:
+            source_band = self.sourceBandMap[targetband]
+            tile = target_tiles.get(targetband)  # target_tiles is a Map<Band,Tile>
+            toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+            self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
+            self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
+            self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
+            self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
+            self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
 
-        toa_tile = context.getSourceTile(source_band, tile.getRectangle())
-        toa_samples = toa_tile.getSamplesFloat()
+            toa_tile = context.getSourceTile(source_band, snappy.Rectangle(source_band.getRasterWidth(),
+                                                                           source_band.getRasterHeight()))
+            toa_samples = toa_tile.getSamplesFloat()
 
-        # this is the core where the uncertainty calculation should grow
-        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
+            # this is the core where the uncertainty calculation should grow
+            unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
 
-        tile.setSamples(unc)
+            tile.setSamples(unc)
 
     def dispose(self, context):
         pass
