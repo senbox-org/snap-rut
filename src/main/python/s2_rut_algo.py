@@ -27,14 +27,14 @@ class S2RutAlgo:
         self.beta = 0.0
         self.u_diff_cos = 0.4  # [%]from 0.13° diffuser planarity/micro as in (AIRBUS 2015)
         self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015)
-        self.u_diff_temp = 1.0  # [%] as a conservative residual (AIRBUS 2015)
+        self.u_diff_temp = 1.0  # This value is correctly redefined for specific satellite at the S2RutOp.
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
-        self.k = 1
+        self.k = 1 # This value is correctly redefined for specific satellite at the S2RutOp.
         self.tecta_warning = False
         self.unc_select = [True, True, True, True, True, True, True, True, True, True, True,
                            True]  # list of booleans with user selected uncertainty sources(order as in interface)
 
-    def unc_calculation(self, band_data, band_id):
+    def unc_calculation(self, band_data, band_id, spacecraft):
         """
         This function represents the core of the RUTv1.
         It takes as an input the pixel data of a specific band and tile in
@@ -47,6 +47,7 @@ class S2RutAlgo:
 
         :param band_data: list with the quantized L1C reflectance pixels of a band (flattened; 1-d)
         :param band_id: zero-based index of the band
+        :param spacecraft: satellite for which uncertainty is calculated. Valid values: "Sentinel-2A" and "Sentinel-2B"
         :return: list of u_int8 with uncertainty associated to each pixel.
         """
 
@@ -77,11 +78,11 @@ class S2RutAlgo:
 
         #######################################################################
         # 3.	Orthorectification process
-        #######################################################################        
+        #######################################################################
 
         # TBD in RUTv2. Here both terms will be used with no distinction.
 
-        #######################################################################        
+        #######################################################################
         # 4.	L1B uncertainty contributors: raw and dark signal
         #######################################################################
 
@@ -97,12 +98,12 @@ class S2RutAlgo:
             u_stray_sys = 0
 
         if self.unc_select[2]:
-            u_stray_rand = rad_conf.u_stray_rand_all[band_id]  # [%](AIRBUS 2015) and (AIRBUS 2012)
+            u_stray_rand = rad_conf.u_stray_rand_all[spacecraft][band_id]  # [%](AIRBUS 2015) and (AIRBUS 2012)
         else:
             u_stray_rand = 0
 
         if self.unc_select[3]:
-            u_xtalk = rad_conf.u_xtalk_all[band_id]  # [W.m-2.sr-1.μm-1](AIRBUS 2015)
+            u_xtalk = rad_conf.u_xtalk_all[spacecraft][band_id]  # [W.m-2.sr-1.μm-1](AIRBUS 2015)
         else:
             u_xtalk = 0
 
@@ -110,13 +111,13 @@ class S2RutAlgo:
             self.u_ADC = 0  # predefined but updated to 0 if deselected by user
 
         if self.unc_select[5]:
-            u_DS = rad_conf.u_DS_all[band_id]
+            u_DS = rad_conf.u_DS_all[spacecraft][band_id]
         else:
             u_DS = 0
 
-        #######################################################################        
+        #######################################################################
         # 5.	L1B uncertainty contributors: gamma correction
-        #######################################################################        
+        #######################################################################
 
         if self.unc_select[6]:
             u_gamma = 0.4  # [%] (AIRBUS 2015)
@@ -128,7 +129,7 @@ class S2RutAlgo:
         #######################################################################
 
         if self.unc_select[7]:
-            u_diff_abs = rad_conf.u_diff_absarray[band_id]
+            u_diff_abs = rad_conf.u_diff_absarray[spacecraft][band_id]
         else:
             u_diff_abs = 0
 

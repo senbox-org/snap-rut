@@ -22,10 +22,13 @@ class S2RutOp:
         self.source_product = None
         self.product_meta = None
         self.datastrip_meta = None
+        self.spacecraft = None  # possible values are "Sentinel-2A" and "Sentinel-2B". Used as a dictionary key
         self.rut_algo = s2_rut_algo.S2RutAlgo()
         self.unc_band = None
         self.toa_band = None
-        self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
+        # S2A launch date 23-june-2015 and S2A launch date 7-march-2017, time is indifferent.
+        self.time_init = {'Sentinel-2A': datetime.datetime(2015, 6, 23, 10, 00),
+                          'Sentinel-2B': datetime.datetime(2017, 3, 7, 10, 00)}
         self.sourceBandMap = None
         self.targetBandList = []
 
@@ -39,6 +42,9 @@ class S2RutOp:
         self.product_meta = metadata_root.getElement('Level-1C_User_Product')
         self.datastrip_meta = metadata_root.getElement('Level-1C_DataStrip_ID')
         granules_meta = metadata_root.getElement('Granules')
+
+        self.spacecraft = self.datastrip_meta.getElement('General_Info').getElement('Datatake_Info').getAttributeString(
+            'SPACECRAFT_NAME')
 
         # todo - check if there is a granule
 
@@ -81,47 +87,48 @@ class S2RutOp:
 
         context.setTargetProduct(rut_product)
 
-    # NOTE: this is the deprecated function from S2-RUT v1.x
-    # def computeTile(self, context, band, tile):
-    #     # Logging template
-    #     # SystemUtils.LOG.info('target band name: ' + band.getName())
-    #     # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
-    #
-    #     source_band = self.sourceBandMap[band]
-    #     toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
-    #     self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
-    #     self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
-    #     self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
-    #     self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
-    #     self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
-    #
-    #     toa_tile = context.getSourceTile(source_band, tile.getRectangle())
-    #     toa_samples = toa_tile.getSamplesFloat()
-    #
-    #     # this is the core where the uncertainty calculation should grow
-    #     unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
-    #
-    #     tile.setSamples(unc)
 
-    def computeTileStack(self, context, target_tiles, target_rectangle):
-        for targetband in self.targetBandList:
-            source_band = self.sourceBandMap[targetband]
-            tile = target_tiles.get(targetband)  # target_tiles is a Map<Band,Tile>
-            toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
-            self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
-            self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
-            self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
-            self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
-            self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
+    def computeTile(self, context, band, tile):
+        # Logging template
+        # SystemUtils.LOG.info('target band name: ' + band.getName())
+        # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
 
-            toa_tile = context.getSourceTile(source_band, snappy.Rectangle(source_band.getRasterWidth(),
-                                                                           source_band.getRasterHeight()))
-            toa_samples = toa_tile.getSamplesFloat()
+        source_band = self.sourceBandMap[band]
+        toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+        self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
+        self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
+        self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
+        self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
+        self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
 
-            # this is the core where the uncertainty calculation should grow
-            unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id)
+        toa_tile = context.getSourceTile(source_band, tile.getRectangle())
+        toa_samples = toa_tile.getSamplesFloat()
 
-            tile.setSamples(unc)
+        # this is the core where the uncertainty calculation should grow
+        unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id, self.spacecraft)
+
+        tile.setSamples(unc)
+
+    # NOTE: this is a function that it is not stable enough
+    # def computeTileStack(self, context, target_tiles, target_rectangle):
+    #     for targetband in self.targetBandList:
+    #         source_band = self.sourceBandMap[targetband]
+    #         tile = target_tiles.get(targetband)  # target_tiles is a Map<Band,Tile>
+    #         toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+    #         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
+    #         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
+    #         self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
+    #         self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
+    #         self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
+    #
+    #         toa_tile = context.getSourceTile(source_band, snappy.Rectangle(source_band.getRasterWidth(),
+    #                                                                        source_band.getRasterHeight()))
+    #         toa_samples = toa_tile.getSamplesFloat()
+    #
+    #         # this is the core where the uncertainty calculation should grow
+    #         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id, self.spacecraft)
+    #
+    #         tile.setSamples(unc)
 
     def dispose(self, context):
         pass
@@ -153,7 +160,8 @@ class S2RutOp:
         time_start = datetime.datetime.strptime(
             datastrip_meta.getElement('General_Info').getElement('Datastrip_Time_Info').getAttributeString(
                 'DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
-        return (time_start - self.time_init).days / 365.25 * rad_conf.u_diff_temp_rate[band_id]
+        return (time_start - self.time_init[self.spacecraft]).days / 365.25 * \
+               rad_conf.u_diff_temp_rate[self.spacecraft][band_id]
 
     def get_beta(self, datastrip_meta, band_id):
         return ([i for i in datastrip_meta.
