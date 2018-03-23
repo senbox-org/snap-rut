@@ -25,8 +25,8 @@ class S2RutAlgo:
         self.quant = 10000.0
         self.alpha = 0.0
         self.beta = 0.0
-        self.u_diff_cos = 0.4  # [%]from 0.13° diffuser planarity/micro as in (AIRBUS 2015)
-        self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015)
+        self.u_diff_cos = 0.4  # [%]from 0.13° diffuser planarity/micro as in (AIRBUS 2015). Assumed same for S2A/S2B.
+        self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015). Assumed same for S2A/S2B.
         self.u_diff_temp = 1.0  # This value is correctly redefined for specific satellite at the S2RutOp.
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1 # This value is correctly redefined for specific satellite at the S2RutOp.

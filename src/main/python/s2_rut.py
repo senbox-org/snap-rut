@@ -16,9 +16,17 @@ import s2_l1_rad_conf as rad_conf
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
 
+# If a Java type is needed which is not imported by snappy by default it can be retrieved manually.
+# First import jpy and then the type to be imported
+from snappy import jpy
+
+MetadataElement = jpy.get_type('org.esa.snap.core.datamodel.MetadataElement')
+MetadataAttribute = jpy.get_type('org.esa.snap.core.datamodel.MetadataAttribute')
+
 
 class S2RutOp:
     def __init__(self):
+        self.s2_rut_info = None
         self.source_product = None
         self.product_meta = None
         self.datastrip_meta = None
@@ -80,13 +88,37 @@ class S2RutOp:
 
         masterband = self.get_masterband(self.targetBandList)
         rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT',
-                                     masterband.getRasterWidth(), masterband.getRasterHeight())
+                                     masterband.getRasterWidth(), masterband.getRasterHeight())  # in-memory product
         snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
         for band in self.targetBandList:
             rut_product.addBand(band)
+        # The metadata from the RUT product is defined
+        rut_product_meta = rut_product.getMetadataRoot()  # Here we define the product metadata
+        # SOURCE_PRODUCT
+        sourceelem = MetadataElement('Source_product')
+        data = snappy.ProductData.createInstance(self.source_product.getDisplayName())
+        sourceattr = MetadataAttribute("SOURCE_PRODUCT", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        sourceattr.setData(data)
+        sourceelem.addAttribute(sourceattr)
+        rut_product_meta.addElement(sourceelem)
+        # COVERAGE_FACTOR
+        sourceelem = MetadataElement('Coverage_factor')
+        data = snappy.ProductData.createInstance(str(context.getParameter('coverage_factor')))
+        sourceattr = MetadataAttribute("COVERAGE_FACTOR", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        sourceattr.setData(data)
+        sourceelem.addAttribute(sourceattr)
+        rut_product_meta.addElement(sourceelem)
+        # RUT_VERSION
+        # This might need to parse s2_rut-info.xml
+        # CONTRIBUTOR LIST
+        # List of selected ones
+        # DATE OF PROCESSING
+        # Use datetime routine to know the instant time.
+        # STATISTICS
+        # initialise here and fill them in computeTile(): mean, median, std, skew, kutorsis
+        # etc...
 
         context.setTargetProduct(rut_product)
-
 
     def computeTile(self, context, band, tile):
         # Logging template
