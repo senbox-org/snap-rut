@@ -8,6 +8,14 @@ import snappy
 import s2_rut_algo
 import numpy as np
 import datetime
+import inspect
+import zipfile
+import os
+
+try:
+    import xml.etree.cElementTree as ET  # C implementation is much faster and consumes significantly less memory
+except ImportError:
+    import xml.etree.ElementTree as ET
 import s2_l1_rad_conf as rad_conf
 
 # necessary for logging
@@ -39,8 +47,16 @@ class S2RutOp:
                           'Sentinel-2B': datetime.datetime(2017, 3, 7, 10, 00)}
         self.sourceBandMap = None
         self.targetBandList = []
+        self.inforoot = None
+        self.rut_product_meta = None
 
     def initialize(self, context):
+
+        # Get the text of the s2_rut-info.xml by decompressing the .jar file and parse the xml file
+        zf = zipfile.ZipFile(os.path.dirname(inspect.getfile(self.__class__)), 'r')
+        data = zf.read('s2_rut-info.xml')
+        self.inforoot = ET.fromstring(data) # this is at the level of <operator> in the xml file
+
         self.source_product = context.getSourceProduct()
 
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
@@ -92,31 +108,49 @@ class S2RutOp:
         snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
         for band in self.targetBandList:
             rut_product.addBand(band)
+
         # The metadata from the RUT product is defined
-        rut_product_meta = rut_product.getMetadataRoot()  # Here we define the product metadata
+        self.rut_product_meta = rut_product.getMetadataRoot()  # Here we define the product metadata
         # SOURCE_PRODUCT
         sourceelem = MetadataElement('Source_product')
         data = snappy.ProductData.createInstance(self.source_product.getDisplayName())
         sourceattr = MetadataAttribute("SOURCE_PRODUCT", snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
-        rut_product_meta.addElement(sourceelem)
+        self.rut_product_meta.addElement(sourceelem)
         # COVERAGE_FACTOR
         sourceelem = MetadataElement('Coverage_factor')
         data = snappy.ProductData.createInstance(str(context.getParameter('coverage_factor')))
         sourceattr = MetadataAttribute("COVERAGE_FACTOR", snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
-        rut_product_meta.addElement(sourceelem)
+        self.rut_product_meta.addElement(sourceelem)
         # RUT_VERSION
-        # This might need to parse s2_rut-info.xml
-        # CONTRIBUTOR LIST
-        # List of selected ones
+        sourceelem = MetadataElement('Version')
+        data = snappy.ProductData.createInstance(self.inforoot[3].text) # version is the fourth node in the info xml
+        sourceattr = MetadataAttribute("VERSION", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        sourceattr.setData(data)
+        sourceelem.addAttribute(sourceattr)
+        self.rut_product_meta.addElement(sourceelem)
+        # CONTRIBUTOR LIST: List of selected ones
+        sourceelem = MetadataElement('List_Contributors')
+        contributors = ["INSTRUMENT_NOISE", "OOF_STRAYLIGHT-SYSTEMATIC", "OOF_STRAYLIGHT-RANDOM", "CROSSTALK",
+                        "ADC_QUANTISATION", "DS_STABILITY", "GAMMA_KNOWLEDGE", "DIFFUSER-ABSOLUTE_KNOWLEDGE",
+                        "DIFFUSER-TEMPORAL_KNOWLEDGE", "DIFFUSER-COSINE_EFFECT", "DIFFUSER-STRAYLIGHT_RESIDUAL",
+                        "L1C_IMAGE_QUANTISATION"]
+        for i in range(0, len(contributors)):
+            data = snappy.ProductData.createInstance(str(self.rut_algo.unc_select[i]))
+            sourceattr = MetadataAttribute(contributors[i], snappy.ProductData.TYPE_ASCII, data.getNumElems())
+            sourceattr.setData(data)
+            sourceelem.addAttribute(sourceattr)
+        self.rut_product_meta.addElement(sourceelem)
         # DATE OF PROCESSING
-        # Use datetime routine to know the instant time.
-        # STATISTICS
-        # initialise here and fill them in computeTile(): mean, median, std, skew, kutorsis
-        # etc...
+        sourceelem = MetadataElement('Processing_datetime')
+        data = snappy.ProductData.createInstance(str(datetime.datetime.now()))
+        sourceattr = MetadataAttribute("PROCESSING_DATETIME", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        sourceattr.setData(data)
+        sourceelem.addAttribute(sourceattr)
+        self.rut_product_meta.addElement(sourceelem)
 
         context.setTargetProduct(rut_product)
 
