@@ -167,13 +167,4 @@ class S2RutAlgo:
         u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
         u_ref = np.uint8(np.clip(u_expand, 0, 250))
 
-        #######################################################################        
-        # 9.	Append uncertainty information to the metadata
-        #######################################################################         
-        # Here the metadata relevant to the uncertainty image created is added
-        # Rad_uncertainty_info [BandId]--> Mean, std. dev, median and
-        # quantile_info_list[5% steps]
-
-        # granule_meta.addElement()
-
         return u_ref
