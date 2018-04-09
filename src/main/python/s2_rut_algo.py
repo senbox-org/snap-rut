@@ -7,6 +7,7 @@ Created on Wed Jan 20 13:48:33 2016
 
 import numpy as np
 import math
+import warnings
 
 import s2_l1_rad_conf as rad_conf
 
@@ -69,9 +70,6 @@ class S2RutAlgo:
         #    [datastrip metadata]
         #    Image_Data_Info/Sensor_Configuration/Acquisition_Configuration/
         #    Spectral_Band_Info/Spectral_Band_Information [bandId]/ PHYSICAL_GAINS
-        if self.tecta > 70 and not self.tecta_warning:  # (see RUT DPM DISCUSSION for explanation and alternative)
-            self.tecta_warning = True
-            print('Tile mean SZA is' + str(self.tecta) + '-->conversion error >5%')
 
         # Replace the reflectance factors by CN values
         cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / math.pi) * band_data
