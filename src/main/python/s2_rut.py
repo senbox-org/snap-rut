@@ -23,6 +23,8 @@ import s2_l1_rad_conf as rad_conf
 
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
+S2_BAND_SAMPLING = {'B1': 60, 'B2': 10, 'B3': 10, 'B4': 10, 'B5': 20, 'B6': 20, 'B7': 20, 'B8': 20, 'B8A': 20, 'B9': 60,
+                    'B10': 60, 'B11': 20, 'B12': 20}
 
 # If a Java type is needed which is not imported by snappy by default it can be retrieved manually.
 # First import jpy and then the type to be imported
@@ -49,15 +51,17 @@ class S2RutOp:
         self.targetBandList = []
         self.inforoot = None
         self.rut_product_meta = None
+        self.source_sza = None
 
     def initialize(self, context):
 
         # Get the text of the s2_rut-info.xml by decompressing the .jar file and parse the xml file
         zf = zipfile.ZipFile(os.path.dirname(inspect.getfile(self.__class__)), 'r')
         data = zf.read('s2_rut-info.xml')
-        self.inforoot = ET.fromstring(data) # this is at the level of <operator> in the xml file
+        self.inforoot = ET.fromstring(data)  # this is at the level of <operator> in the xml file
 
         self.source_product = context.getSourceProduct()
+        self.source_sza = self.source_product.getBand('sun_zenith')
 
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
@@ -90,7 +94,10 @@ class S2RutOp:
         for name in self.toa_band_names:
             # TODO - Change the interface so that undesired bands (e.g azimuth) are not shown.
             if not name in S2_BAND_NAMES:  # The band name is checked to confirm it is valid band.
-                raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
+                if ('view_' in name) or ('sun_' in name):
+                    continue # the angular bands are shown in the GUI and we simply jump to the next band if selected
+                else:
+                    raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
 
             source_band = self.source_product.getBand(name)
             unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
@@ -127,7 +134,7 @@ class S2RutOp:
         self.rut_product_meta.addElement(sourceelem)
         # RUT_VERSION
         sourceelem = MetadataElement('Version')
-        data = snappy.ProductData.createInstance(self.inforoot[3].text) # version is the fourth node in the info xml
+        data = snappy.ProductData.createInstance(self.inforoot[3].text)  # version is the fourth node in the info xml
         sourceattr = MetadataAttribute("VERSION", snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)

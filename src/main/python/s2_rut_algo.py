@@ -31,7 +31,6 @@ class S2RutAlgo:
         self.u_diff_temp = 1.0  # This value is correctly redefined for specific satellite at the S2RutOp.
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
         self.k = 1 # This value is correctly redefined for specific satellite at the S2RutOp.
-        self.tecta_warning = False
         self.unc_select = [True, True, True, True, True, True, True, True, True, True, True,
                            True]  # list of booleans with user selected uncertainty sources(order as in interface)
 
