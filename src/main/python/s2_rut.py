@@ -95,7 +95,7 @@ class S2RutOp:
             # TODO - Change the interface so that undesired bands (e.g azimuth) are not shown.
             if not name in S2_BAND_NAMES:  # The band name is checked to confirm it is valid band.
                 if ('view_' in name) or ('sun_' in name):
-                    continue # the angular bands are shown in the GUI and we simply jump to the next band if selected
+                    continue  # the angular bands are shown in the GUI and we simply jump to the next band if selected
                 else:
                     raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
 

@@ -1,63 +1,60 @@
 #!/usr/bin/env python
-#==========================================            DESCRIPTION            ==========================================
+# ==========================================            DESCRIPTION            ==========================================
 
 # This script has the goal of
 
 
-#===========================================            LIBRARIES            ===========================================
+# ===========================================            LIBRARIES            ===========================================
 import os
 import numpy as np
 import datetime
 from scipy.misc import imresize
 import snappy
 import matplotlib
+
 matplotlib.use('Agg')  # this does not show the plot on the screen
 import matplotlib.pyplot as pt
 
-#======================================            CONSTANT VARIABLES            =======================================
-SITE = 'Gobabeb' # choose site ('Gobabeb', 'Boussoule' or 'DCC')
-
+# ======================================            CONSTANT VARIABLES            =======================================
 # contains the only valid names of the S2 RUT product bands. S2 L1C product bands use same naming excluding "_rut"
 S2RUT_BAND_NAMES = ['B1_rut', 'B2_rut', 'B3_rut', 'B4_rut', 'B5_rut', 'B6_rut', 'B7_rut', 'B8_rut', 'B8A_rut',
-                    'B11_rut',
-                    'B12_rut']
-S2_BAND_CW = [443, 490, 560, 665, 705, 740, 783, 842, 865, 1610, 2190] # CW for each band
+                    'B11_rut', 'B12_rut']
+S2_BAND_CW = [443, 490, 560, 665, 705, 740, 783, 842, 865, 1610, 2190]  # CW for each band
 S2RUT_BAND_SAMPLING = [60, 10, 10, 10, 20, 20, 20, 10, 20, 20, 20]  # product before October 2016 is not automatic
 
-ITERPOINTS = 2000 # Number of iteration points that MonteCarlo performs
+ITERPOINTS = 2000  # Number of iteration points that MonteCarlo performs
 
 # append the two folder directories so that can import the classes inside.
-ROI_PATH = '/home/data/S2MSI/S2ROI' # this contains the uncertainty products for each site and stores the results
-S2_DATA = '/home/data/S2MSI/' # here the specified S2 L1C products are read
+ROI_PATH = '/home/data/S2MSI/S2ROI/Gobabeb'  # contains the uncertainty products for each site and stores the results
+S2_DATA = '/home/data/S2MSI/Gobabeb'  # here the specified S2 L1C products are read
 
+# It is only prepared to process the *.dim files.
 UNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rut.dim"
 ROIUNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rutroi.dim"
-S2FILE = os.path.join("S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE","MTD_MSIL1C.xml")
+S2FILE = os.path.join("S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE", "MTD_MSIL1C.xml")
 LAT = -23.6
 LON = 15.119
 W = 500
 H = 500
 
-#=======================================================================================================================
+
+# =======================================================================================================================
 
 class S2ROIuncprocessor:
     def __init__(self):
         '''
         The class contains all methods and variables necessary to calculate the uncertainty of an ROI mean of S2A.
-        The results and study have been integrated in a paper named "Providing uncertainty estimates of the Sentinel-2
-        Top-of-Atmosphere measurements for radiometric validation activities" submitted to the European Journal of
-        Remote Sensing.
+        The results and study have been integrated in a paper:
+        Gorrono, J.; Hunt, S.; Scanlon, T.; Banks, A.; Fox, N.; Woolliams, E.; Underwood, C.; Gascon, F.; Peters,
+        M.; Fomferra, N., et al. Providing uncertainty estimates of the sentinel-2 top-of-atmosphere measurements
+        for radiometric validation activities. European Journal of Remote Sensing 2017.
         '''
-        self.time_init = datetime.datetime(2015, 6, 23, 10, 00)  # S2A launch date 23-june-2015, time is indifferent
-        self.unc_path = os.path.join(ROI_PATH, SITE, UNC_FILE)
-        self.roiunc_path = os.path.join(ROI_PATH, SITE, ROIUNC_FILE)
-        self.s2_path = os.path.join(S2_DATA, SITE, S2FILE)
+        self.time_init = {'Sentinel-2A': datetime.datetime(2015, 6, 23, 10, 00),
+                          'Sentinel-2B': datetime.datetime(2017, 3, 7, 10, 00)}
 
         self.source_band = None
         self.samp_band = None
         self.roi_uncpixel = []
-        self.roi_uncbc = []
-        self.roi_uncwc = []
 
         self.s2roi = []
         self.wpix = None
@@ -74,30 +71,25 @@ class S2ROIuncprocessor:
 
         # Value will be obtained from metadata
         self.udifftemp = []
-        self.u_diff_temp_rate = [0.15, 0.09, 0.04, 0.02, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.u_diff_temp_rate = {'Sentinel-2A': [0.15, 0.09, 0.04, 0.02, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                 'Sentinel-2B': [0.15, 0.09, 0.04, 0.02, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}
 
         # Values taken from https://github.com/senbox-org/snap-rut/blob/master/src/main/python/s2_l1_rad_conf.py (27/06/2017)
         self.uoof_rand = [0.1, 0.1, 0.08, 0.12, 0.44, 0.16, 0.2, 0.2, 0.04, 0, 0]
-        self.udiffabs = [1.09, 1.08, 0.84, 0.73, 0.68, 0.97, 0.83, 0.81, 0.88, 1.39,
-                         1.58]  # [%] values in  (AIRBUS 2015)
+        self.udiffabs = [1.09, 1.08, 0.84, 0.73, 0.68, 0.97, 0.83, 0.81, 0.88, 1.39, 1.58]  # [%]
         # Values taken from https://github.com/senbox-org/snap-rut/blob/master/src/main/python/s2_rut_algo.py (27/06/2017)
-        self.udiffcosine = 0.4  # [%]from 0.13 degrees diffuser planarity/micro as in (AIRBUS 2015)
-        self.udiffk = 0.3  # [%] as a conservative residual (AIRBUS 2015)
-        self.ugamma = 0.4  # [%] (AIRBUS 2015)
+        self.udiffcosine = 0.4  # [%] from 0.13 degrees diffuser planarity
+        self.udiffk = 0.3  # [%] as a conservative residual
+        self.ugamma = 0.4  # [%]
 
         self.band_index = None
         self.numrow = None
         self.numcol = None
         self.roi_uncMCM = []
-        self.roi_MCMsamples = []
-        self.roi_spectraluncMCM = []  # it will hold the spectral ratio uncertainty for DCC case
-        self.roi_spectralstandarduncMCM = []  # same but without including the mean i.e. the standard uncertainty
-        self.roi_uoffuncMCM = []  # list for sensitivity analysis of uoof_sys impact in the case of Boussoule site
 
-    def simplemethod(self):
+    def selectdeselectmethod(self):
         '''
         Opens the pre-generated uncertainty images and selects the ROI
-        //italics
         Method "select/deselect" as described in article
         Gorrono, J.; Hunt, S.; Scanlon, T.; Banks, A.; Fox, N.; Woolliams, E.; Underwood, C.; Gascon, F.; Peters,
         M.; Fomferra, N., et al. Providing uncertainty estimates of the sentinel-2 top-of-atmosphere measurements
@@ -105,32 +97,36 @@ class S2ROIuncprocessor:
         '''
 
         for bandname in S2RUT_BAND_NAMES:
-            self.samp_band = S2RUT_BAND_SAMPLING[S2RUT_BAND_NAMES.index(bandname)]
-
-            roiunc_product = snappy.ProductIO.readProduct(self.unc_path)
+            roiunc_product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, UNC_FILE))
             self.source_band = roiunc_product.getBand(bandname)
-            self.roi_uncpixel.append(self.read_main()) # we could add 0.5 or not to account for truncation
+            data = self.read_main()
+            self.roi_uncpixel.append(data)  # we could add 0.5 or not to account for truncation
 
-            roiunc_product = snappy.ProductIO.readProduct(self.roiunc_path[:-4] + 'bc.dim')
-            self.source_band = roiunc_product.getBand(bandname)
-            self.roi_uncbc.append(self.read_main())
+            f = pt.figure()
+            f.hold(True)
+            pt.imshow(data, interpolation='none')
+            ax = pt.gca()
+            ax.set_title(' S2 TOA unc ' + bandname)
+            ax.xaxis.set_label_text('Longitude pixels')
+            ax.yaxis.set_label_text('Latitude pixels')
 
-            roiunc_product = snappy.ProductIO.readProduct(self.roiunc_path[:-4] + 'wc.dim')
-            self.source_band = roiunc_product.getBand(bandname)
-            self.roi_uncwc.append(self.read_main())
-
-            band_index = S2RUT_BAND_NAMES.index(bandname)
-
-            self.unc_plot(band_index) # Plot the results of the METHOD 1
+            cbar = pt.colorbar()  # adds the values associated to the colours
+            cbar.ax.get_yaxis().labelpad = 15
+            cbar.ax.set_ylabel('TOA uncertainty', rotation=270)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+            ax.tick_params(axis='both', which='minor', labelsize=8)
+            ax.invert_yaxis()
+            ax.legend(loc='lower left', prop={'size': 10})
+            f.savefig(os.path.join(ROI_PATH, 'ROI_' + bandname + '.tif'))
+            pt.close(f)
 
     def MCMmethod(self):
         '''
-
+        Main method that manages the Monte-Carlo approach and compares vs. the select/deselect method.
         :param prod: Sentinel-2 product path that is to be processed
         :return:
         '''
-
-        self.simplemethod() # This reads the uncertainty using the RUT
+        self.selectdeselectmethod()  # This reads the uncertainty using the RUT
 
         f, ax = pt.subplots(nrows=3, ncols=1, sharex=True)  # Plot for MCM
         f.hold(True)
@@ -142,29 +138,29 @@ class S2ROIuncprocessor:
             self.samp_band = S2RUT_BAND_SAMPLING[S2RUT_BAND_NAMES.index(bandname)]
 
             # READ S2ROI
-            s2_product = snappy.ProductIO.readProduct(self.s2_path)
+            s2_product = snappy.ProductIO.readProduct(os.path.join(S2_DATA, S2FILE))
             self.source_band = s2_product.getBand(bandname[:-4])  # RUT product same bandname as S2 L1C +_rut
             self.s2roi.append(self.read_main())
 
             # METHOD 2: calculating the ROI uncertainty from correlation matrices
             # Adds 0.5 to images since they are truncated and the best estimate is 0.5 offset
-            product = snappy.ProductIO.readProduct(self.roiunc_path[:-7] + 'unoise.dim')
+            product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + 'unoise.dim')
             self.source_band = product.getBand(bandname)
             self.unoise.append(self.read_main() + 0.5)
 
-            product = snappy.ProductIO.readProduct(self.roiunc_path[:-7] + 'uoof_sys.dim')
+            product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + 'uoof_sys.dim')
             self.source_band = product.getBand(bandname)
             self.uoof_sys.append(self.read_main() + 0.5)
 
-            product = snappy.ProductIO.readProduct(self.roiunc_path[:-7] + 'ADC.dim')
+            product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + 'ADC.dim')
             self.source_band = product.getBand(bandname)
             self.uADC.append(self.read_main() + 0.5)
 
-            product = snappy.ProductIO.readProduct(self.roiunc_path[:-7] + 'ds.dim')
+            product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + 'ds.dim')
             self.source_band = product.getBand(bandname)
             self.uds.append(self.read_main() + 0.5)
 
-            product = snappy.ProductIO.readProduct(self.roiunc_path[:-7] + 'uL1Cquant.dim')
+            product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + 'uL1Cquant.dim')
             self.source_band = product.getBand(bandname)
             self.uL1Cquant.append(self.read_main() + 0.5)
 
@@ -175,7 +171,6 @@ class S2ROIuncprocessor:
             self.band_index = S2RUT_BAND_NAMES.index(bandname)
             (self.numrow, self.numcol) = self.s2roi[self.band_index].shape
             roi_uncsamp = self.MCMalgo()
-            # self.roi_MCMsamples.append(roi_uncsamp)
 
             roi_uncMCM = [np.mean(roi_uncsamp[:, t]) + np.std(roi_uncsamp[:, t]) for t in
                           range(0, roi_uncsamp.shape[1])]
@@ -196,77 +191,25 @@ class S2ROIuncprocessor:
             a.plot(roi_x, roi_uncMCM,
                    label=bandname[:-4] + ' ' + str(S2_BAND_CW[self.band_index]) + ' nm',
                    color=colorlist[self.band_index], marker='*', linewidth=2)
-            b.plot(roi_x, (
-                np.mean(
-                    (self.roi_uncbc[self.band_index] + self.roi_uncwc[self.band_index]) / 2) + 0.5) / 10 - roi_uncMCM,
+            b.plot(roi_x, (self.roi_uncpixel[self.band_index] + 0.5) / 10 - roi_uncMCM,
                    label=bandname[:-4] + ' ' + str(S2_BAND_CW[self.band_index]) + ' nm',
                    color=colorlist[self.band_index], marker='*', linewidth=2)
-            # b.plot(roi_x, np.mean(self.roi_uncwc[self.band_index] + 0.5) / 10 - roi_uncMCM,
-            #        label=bandname[:-4] + ' ' + str(S2_BAND_CW[self.band_index]) + ' nm',
-            #        color=colorlist[self.band_index], marker='*', linewidth=2)
             a.grid(True)
             b.grid(True)
         [a.legend(loc='upper right', ncol=2, numpoints=1, markerscale=1, prop={'size': 10}, fancybox=True) for a in ax]
-        # [a.set_yscale('log') for a in ax]
-        # [a.set_xscale('log') for a in ax]
         f.text(0.5, 0.04, 'ROI size [m]', ha='center')
         f.text(0.04, 0.5, 'Uncertainty $\it{k}$ = 1 [%] (MCM method)', va='center', rotation='vertical')
         [a.set_xlim(a.xaxis.get_data_interval()) for a in ax]
         [a.set_ylim(a.yaxis.get_data_interval()) for a in ax]
-        # pt.tick_params(axis='both', which='minor')
-        # [a.yaxis.set_minor_formatter(FormatStrFormatter("%.2f")) for a in ax]
-        # [a.xaxis.set_minor_formatter(FormatStrFormatter("%d")) for a in ax]
-        f.savefig(os.path.join(ROI_PATH, 'MCMuncertainty_' + SITE + '.tif'))
+        f.savefig(os.path.join(ROI_PATH, 'MCMuncertainty.tif'))
         pt.close(f)
         [b.legend(loc='lower right', numpoints=1, markerscale=1, prop={'size': 10}, fancybox=True) for b in ax2]
-        # [b.set_yscale('log') for b in ax2]
-        # [b.set_xscale('log') for b in ax2]
         g.text(0.5, 0.04, 'ROI size [m]', ha='center')
         g.text(0.04, 0.5, 'Uncertainty difference $\it{k}$ = 1 [%] (select/deselect vs. MCM)', va='center',
                rotation='vertical')
         [b.set_xlim(b.xaxis.get_data_interval()) for b in ax2]
         [b.set_ylim(b.yaxis.get_data_interval()) for b in ax2]
-        # [b.set_ylim([-1,0.2]) for b in ax2]
-        # pt.tick_params(axis='both', which='minor')
-        # [b.yaxis.set_minor_formatter(FormatStrFormatter("%.2f")) for b in ax2]
-        # [b.xaxis.set_minor_formatter(FormatStrFormatter("%d")) for b in ax2]
-        g.savefig(os.path.join(ROI_PATH, 'MCMuncertaintydiff_' + SITE + '.tif'))
-        pt.close(g)
-        f, ax = pt.subplots(nrows=3, ncols=1, sharex=True)  # Plot for MCM
-        f.hold(True)
-        for bandname in S2RUT_BAND_NAMES:
-            ratio_spectralstandarduncMCM = []
-            ratio_spectraluncMCM = []
-            self.samp_band = S2RUT_BAND_SAMPLING[S2RUT_BAND_NAMES.index(bandname)]
-            self.band_index = S2RUT_BAND_NAMES.index(bandname)
-            if self.band_index == 3:  # B4 is the reference and ratio makes no sense to calculate
-                continue
-            (self.numrow, self.numcol) = self.s2roi[self.band_index].shape
-            ratiocorrlist = np.arange(0, 1.1, 0.1)
-            for ratiocorr in ratiocorrlist:
-                roi_uncspectralsamp = self.MCMspectralalgo(ratiocorr)
-                ratio_spectralstandarduncMCM.append(np.std(roi_uncspectralsamp))
-                ratio_spectraluncMCM.append(np.abs(np.mean(roi_uncspectralsamp)) + np.std(roi_uncspectralsamp))
-            if self.band_index <= 2:  # Visible
-                a = ax[0]
-            elif self.band_index >= 9:  # SWIR
-                a = ax[2]
-            else:  # case NIR
-                a = ax[1]
-            a.plot(ratiocorrlist, ratio_spectraluncMCM,
-                   label=bandname[:-4] + ' ' + str(S2_BAND_CW[self.band_index]) + ' nm',
-                   color=colorlist[self.band_index], marker='*', linewidth=2)
-            a.grid(True)
-            self.roi_spectralstandarduncMCM.append(ratio_spectralstandarduncMCM)
-            self.roi_spectraluncMCM.append(ratio_spectraluncMCM)
-        [a.legend(loc='upper right', ncol=2, numpoints=1, markerscale=1, prop={'size': 10}, fancybox=True) for a in
-         ax]
-        f.text(0.5, 0.04, '$u_{diffabs}$ spectral correlation', ha='center')
-        f.text(0.04, 0.5, 'Uncertainty $\it{k}$ = 1 [%] (MCM method)', va='center', rotation='vertical')
-        [a.set_xlim(a.xaxis.get_data_interval()) for a in ax]
-        [a.set_ylim(a.yaxis.get_data_interval()) for a in ax]
-        f.savefig(os.path.join(ROI_PATH, 'MCMspectraluncertainty_' + SITE + '.tif'))
-        pt.close(f)
+        g.savefig(os.path.join(ROI_PATH, 'MCMuncertaintydiff.tif'))
 
     def read_main(self):
         '''
@@ -276,7 +219,7 @@ class S2ROIuncprocessor:
         '''
 
         # these lines convert centre coordinates LAT, LON in "pix_pos(X,Y)"
-        self.wpix = int(round(W / self.samp_band)) # number of pixels in ROI
+        self.wpix = int(round(W / self.samp_band))  # number of pixels in ROI
         self.hpix = int(round(H / self.samp_band))
         geo_pos = snappy.GeoPos()
         geo_pos.lat = LAT
@@ -298,9 +241,7 @@ class S2ROIuncprocessor:
     def get_u_diff_temp(self, datastrip_meta, band_id):
         '''
         Calculates an estimation of diffuser degradation based on MERIS diffuser rates
-
-        Minor adaptation of
-        https://github.com/senbox-org/snap-rut/blob/master/S3PACKAGE/main/python/s2_rut.py (accessed on 27/06/2017)
+        Minor adaptation of https://github.com/senbox-org/snap-rut/src/main/python/s2_rut.py (accessed on 13/04/2018)
 
         :param datastrip_meta:
         :param band_id:
@@ -310,8 +251,8 @@ class S2ROIuncprocessor:
         time_start = datetime.datetime.strptime(
             datastrip_meta.getElement('General_Info').getElement('Datastrip_Time_Info').getAttributeString(
                 'DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
-
-        return (time_start - self.time_init).days / 365.25 * self.u_diff_temp_rate[band_id]
+        return (time_start - self.time_init[self.spacecraft]).days / 365.25 * self.u_diff_temp_rate[self.spacecraft][
+            band_id]
 
     def MCMalgo(self):
         '''
@@ -384,46 +325,3 @@ class S2ROIuncprocessor:
             roi_uncsamp.append(roi_uncsize)
 
         return np.array(roi_uncsamp)
-
-    def unc_plot(self, band_index):
-        '''
-        For an specific product and band, it derives the distribution of uncertianty and the ROI TOA reflectance
-        :param band_index: the list index of the specific band
-        :return:
-        '''
-
-        f = pt.figure()
-        f.hold(True)
-        pt.imshow(self.roi_uncbc[band_index], interpolation='none')
-        ax = pt.gca()
-        ax.set_title(SITE + ' S2 TOA unc ' + S2RUT_BAND_NAMES[band_index])
-        ax.xaxis.set_label_text('Longitude pixels')
-        ax.yaxis.set_label_text('Latitude pixels')
-
-        cbar = pt.colorbar()  # adds the values associated to the colours
-        cbar.ax.get_yaxis().labelpad = 15
-        cbar.ax.set_ylabel('TOA uncertainty', rotation=270)
-        ax.tick_params(axis='both', which='major', labelsize=8)
-        ax.tick_params(axis='both', which='minor', labelsize=8)
-        ax.invert_yaxis()
-        ax.legend(loc='lower left', prop={'size': 10})
-        f.savefig(os.path.join(ROI_PATH, SITE + '_bcroi_' + S2RUT_BAND_NAMES[band_index] + '.tif'))
-        pt.close(f)
-
-        f = pt.figure()
-        f.hold(True)
-        pt.imshow(self.roi_uncwc[band_index], interpolation='none')
-        ax = pt.gca()
-        ax.set_title(SITE + ' S2 TOA unc ' + S2RUT_BAND_NAMES[band_index])
-        ax.xaxis.set_label_text('Longitude pixels')
-        ax.yaxis.set_label_text('Latitude pixels')
-
-        cbar = pt.colorbar()  # adds the values associated to the colours
-        cbar.ax.get_yaxis().labelpad = 15
-        cbar.ax.set_ylabel('TOA uncertainty', rotation=270)
-        ax.tick_params(axis='both', which='major', labelsize=8)
-        ax.tick_params(axis='both', which='minor', labelsize=8)
-        ax.invert_yaxis()
-        ax.legend(loc='lower left', prop={'size': 10})
-        f.savefig(os.path.join(ROI_PATH, SITE + '_wcroi_' + S2RUT_BAND_NAMES[band_index] + '.tif'))
-        pt.close(f)
