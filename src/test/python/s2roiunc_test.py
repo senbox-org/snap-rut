@@ -36,12 +36,12 @@ S2RUT_BAND_SAMPLING = {'B1_rut': 60, 'B2_rut': 10, 'B3_rut': 10, 'B4_rut': 10, '
 ITERPOINTS = 2000  # Number of iteration points that MonteCarlo performs
 
 # append the two folder directories so that can import the classes inside.
-ROI_PATH = '/home/data/satellite/S2A_MSI/S2ROI/Gobabeb'  # contains the uncertainty products for each site and stores the results
+ROI_PATH = '/home/data/satellite/S2A_MSI/S2ROI/Gobabeb_examplesnap'  # contains the uncertainty products for each site and stores the results
 S2_DATA = '/home/data/satellite/S2A_MSI/L1/RadCalNet/GONA'  # here the specified S2 L1C products are read
 
 # It is only prepared to process the *.dim files.
 UNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rut.dim"
-ROIUNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rutroibc.dim"
+ROIUNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rutroi.dim"
 S2FILE = os.path.join("S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE", "MTD_MSIL1C.xml")
 LAT = -23.6
 LON = 15.119
@@ -120,11 +120,11 @@ class S2ROIuncprocessor:
         for bandname in self.bandnames:
             self.source_band = roiunc_product.getBand(bandname)
             dataroi = self.read_main(S2RUT_BAND_SAMPLING[bandname])
-            self.roi_uncpixel.append(dataroi)  # we could add 0.5 or not to account for truncation
+            self.roi_uncpixel.append(dataroi)
 
             self.source_band = unc_product.getBand(bandname)
             datapixel = self.read_main(S2RUT_BAND_SAMPLING[bandname])
-            self.uncpixel.append(datapixel)  # we could add 0.5 or not to account for truncation
+            self.uncpixel.append(datapixel)
 
             self.plot_ROI(datapixel, dataroi, bandname)
 
@@ -147,7 +147,7 @@ class S2ROIuncprocessor:
 
             roi_uncMCM = [np.mean(roi_uncsamp[:, t]) + np.std(roi_uncsamp[:, t]) for t in
                           range(0, roi_uncsamp.shape[1])]
-            roi_uncMCM[0] = np.mean(datapixel) / 10  # the first is replaced by pixel unc/10!!!
+            roi_uncMCM[0] = np.mean(datapixel) / 10  # the first row is replaced by pixel unc/10!!!
             self.roi_uncMCM.append(roi_uncMCM)
             if band_index <= 3:  # Visible
                 a = ax[0]
@@ -342,6 +342,6 @@ class S2ROIuncprocessor:
         :param bandname: string with the name of the band
         :return: ROI uncertainty values for that contributor and band
         '''
-        product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-9] + tagname + '.dim')
+        product = snappy.ProductIO.readProduct(os.path.join(ROI_PATH, ROIUNC_FILE)[:-7] + tagname + '.dim')
         self.source_band = product.getBand(bandname)
         return self.read_main(S2RUT_BAND_SAMPLING[bandname])
