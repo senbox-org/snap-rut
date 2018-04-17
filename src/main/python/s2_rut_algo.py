@@ -30,6 +30,7 @@ class S2RutAlgo:
         self.u_diff_k = 0.3  # [%] as a conservative residual (AIRBUS 2015). Assumed same for S2A/S2B.
         self.u_diff_temp = 1.0  # This value is correctly redefined for specific satellite at the S2RutOp.
         self.u_ADC = 0.5  # [DN](rectangular distribution, see combination)
+        self.u_gamma = 0.4
         self.k = 1 # This value is correctly redefined for specific satellite at the S2RutOp.
         self.unc_select = [True, True, True, True, True, True, True, True, True, True, True,
                            True]  # list of booleans with user selected uncertainty sources(order as in interface)
@@ -117,9 +118,9 @@ class S2RutAlgo:
         #######################################################################
 
         if self.unc_select[6]:
-            u_gamma = 0.4  # [%] (AIRBUS 2015)
+            self.u_gamma = 0.4  # [%] (AIRBUS 2015)
         else:
-            u_gamma = 0
+            self.u_gamma = 0
 
         #######################################################################
         # 6.	L1C uncertainty contributors: absolute calibration coefficient
@@ -159,7 +160,7 @@ class S2RutAlgo:
         u_ds = (100 * u_DS) / cn
         u_stray = np.sqrt(u_stray_rand ** 2 + ((100 * self.a * u_xtalk) / cn) ** 2)
         u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
-        u_1sigma = np.sqrt(u_ref_quant ** 2 + u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
+        u_1sigma = np.sqrt(u_ref_quant ** 2 + self.u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
                            u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
         u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
         u_ref = np.uint8(np.clip(u_expand, 0, 250))
