@@ -162,7 +162,7 @@ class S2RutAlgo:
         u_diff = math.sqrt(u_diff_abs ** 2 + self.u_diff_cos ** 2 + self.u_diff_k ** 2)
         u_1sigma = np.sqrt(u_ref_quant ** 2 + self.u_gamma ** 2 + u_stray ** 2 + u_diff ** 2 +
                            u_noise ** 2 + u_adc ** 2 + u_ds ** 2)
-        u_expand = 10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma)
+        u_expand = np.round(10 * (self.u_diff_temp + ((100 * self.a * u_stray_sys) / cn) + self.k * u_1sigma))
         u_ref = np.uint8(np.clip(u_expand, 0, 250))
 
         return u_ref
