@@ -9,5 +9,6 @@
     <mapID target="s2rutTheory" url="S2RutTheoryIntro.html"/>
     <mapID target="s2rutProc" url="S2RutProcessorDescription.html"/>
     <mapID target="s2rutAlgo" url="S2RutAlgoSpecification.html"/>
+    <mapID target="s2rutROI" url="S2RutROIuncertainty.html"/>
 
 </map>

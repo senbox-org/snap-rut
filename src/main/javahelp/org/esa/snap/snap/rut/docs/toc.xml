@@ -10,6 +10,7 @@
                     <tocitem text="S2-RUT Theoretical Introduction" target="s2rutTheory"/>
                     <tocitem text="S2-RUT Processor Documentation" target="s2rutProc"/>
                     <tocitem text="S2-RUT Algorithm Specification" target="s2rutAlgo"/>
+                    <tocitem text="S2-RUT ROI uncertainty" target="s2rutROI"/>
                 </tocitem>
             </tocitem>
         </tocitem>

@@ -1,0 +1,235 @@
+<!--
+  ~ Copyright (C) 2016 Brockmann Consult GmbH (info@brockmann-consult.de)
+  ~ Copyright (C) 2016 Javier Gorrono, National Physical Laboratory (javier.gorrono@npl.co.uk)
+  ~
+  ~ This program is free software; you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation; either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License along
+  ~ with this program; if not, see http://www.gnu.org/licenses/
+  -->
+
+<html>
+<head>
+    <title>S2-RUT</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<table class="header">
+    <tr class="header">
+        <td class="header">S2-RUT Region-of-Interest uncertainty</td>
+        <td class="header" align="right"><img src="images/snap_header.jpg" border=0></td>
+    </tr>
+</table>
+
+<h3>Introduction</h3>
+
+<p>
+    The S2-RUT produces per-pixel uncertainty of ESA Sentinel-2 L1C MSI products at a specified confidence level. The
+    uncertainty combination of different pixels in a Region-of-Interest (ROI) is not a trivial process.
+    <b>When combining the uncertainty from different pixels, the users should discard methods as the standard deviation
+        of the mean or the straightforward combination of the pixels' uncertainty</b>.
+    Instead, the users need to consider the correlation between different pixels.
+</p>
+<p>
+    In order to calculate the uncertainty associated with a pixels' mean, two separate methods have been developed and
+    they are separately explained in the following sections. More details can be found in the associated publication:
+    <a href="#ref1">[1]</a>
+</p>
+
+<h5>Select and deselect contributors</h5>
+
+<p>
+    The "select/deselect" method uses the capability of the S2-RUT to generate uncertainty images for selected
+    uncertainty contributors to estimate the total uncertainty of the average reflectance of a ROI.
+</p>
+<p>
+    In this approach we assign each effect to being either correlated (not reduced by averaging over the ROI), or
+    uncorrelated (reduced by averaging over the ROI) and select only the correlated effects, assuming that the
+    uncorrelated effects become negligible at the scale of the ROI. Each effect is discussed in <a href="#ref1">[1]</a>,
+    which describes how decisions were made. Note that effects may be correlated in one dimension (e.g. spatial) and
+    uncorrelated in another (e.g. temporal or spectral). The associated correlation should be evaluated experimentally
+    if feasible by studying the combined variations of the quantities or using any available additional data pertaining
+    to their interrelationship. Additionally, or in the absence of available data information based on experience and
+    general knowledge can be utilised <a href="#ref2">[2]</a>.
+</p>
+<p>
+    The method named "select/deselect" is intended to be as simple and quick as possible for the S2 L1C data users. In
+    this method, the user interface incorporates a tick option to select individual effects, as shown below:
+</p>
+
+<p align="center"><img src="images/selectdeselectcontributors.png" width="20%" height="70%" border=0></p>
+
+<p>
+    The user can run the S2-RUT with unselected <i>instrument noise</i>, <i>Crosstalk</i>, <i>ADC_quantisation</i> and
+    <i>L1C image quantisation</i> since they are considered as nearly uncorrelated in time and space domain. In
+    addition, the user can optionally unselect <i>OOF straylight-random</i> and <i>Gamma knowledge</i> since they are
+    considered as correlated in time but uncorrelated in space.In such cases, the method can been adapted to produce two
+    uncertainty images with the partially correlated contributions selected and deselected. The result is taken as the
+    mean of the two ROI pixels for the two images.
+</p>
+<p>
+    The result is an uncertainty image with only correlated components. An example for S2A B3 in a 500m ROI in Gobabeb
+    is shown below:
+</p>
+<p align="center"><img src="images/ROI_B3_rut.png" width="30%" height="40%" border=0></p>
+
+<p>
+    The result has minimum uncertainty variations (from 1.6% to 1.7%) and the value of either one pixel or the mean
+    uncertainty over an specific area can be taken as an approximmation of the uncertainty associated to a pixels' mean.
+</p>
+<p>
+    The approach is very simple but has several limitations. For example, for ROIs of just a few pixels, the assumption
+    that the random effects become insignificant may not be sufficient. Thus, this method must be tested to understand
+    the validity of the ROI size at which this assumption is valid. The method also does not provide flexibility to cope
+    with situations where the effect cannot be considered either perfectly correlated or perfectly uncorrelated.
+</p>
+
+<h5>Monte-Carlo pixel uncertainty propagation</h5>
+
+<p>
+    The Monte-Carlo Method (MCM) determines the mean TOA reflectance factor for a ROI from the pixels over many
+    iterations. At each iteration, the error associated with the reflectance factor is drawn from the distribution of
+    each uncertainty contribution. If the uncertainty contribution is correlated between the pixels, the same sample is
+    used for all the pixels in the ROI, whereas, if the uncertainty contribution is uncorrelated, a different error is
+    drawn from the distribution for each pixel. Where there is partial correlation, two separate errors are drawn, one
+    that is common to all pixels and one which is different from pixel to pixel. The distributions are set as normal or
+    uniform distributions with a spread of values directly linked to the uncertainty as calculated directly from the
+    S2-RUT. This uncertainty is obtained by generating an image of the specific uncertainty contribution. The method is
+    illustrated below:
+</p>
+<p align="center"><img src="images/MCMROImethod.png" width="40%" height="40%" border=0></p>
+
+<h5>Running the Monte-Carlo uncertainty propagation</h5>
+<p>
+    The RUT does incorporate from version 2, the possibility to replicate a full Monte-Carlo uncertainty propagation of
+    the pixels in a ROI. The process is not straightforward but here below the execution is detailed step-by-step:
+</p>
+<ul style="list-style-type:square">
+    <li>Select the S2 L1C product. E.g. <i>S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE</i>
+    </li>
+    <li>Process its uncertainty image in BEAM-DIMAP format for the desired bands (all uncertainty contributions must be
+        selected) E.g.<i>B3</i>, <i>B8A</i> and <i>B12</i>. Save it with the default extension i.e. S2 product name +
+        <i>_rut</i>.
+    </li>
+    <li>Process its uncertainty image in BEAM-DIMAP format for the desired bands but with only spatial and temporal
+        correlated components as explained in the Section Select and deselect contributors. Save it with the extension
+        <i>_rutroi</i> in the same folder as the previous uncertainty product.
+    </li>
+    <li>4) Process uncertainty images of specific contributors in BEAM-DIMAP format for the desired bands. Do this by
+        only selecting the specific contributor in the GUI each time and save the uncertainty product in the same folder
+        as the previous ones. For each specific contributor, specify the output product with the default S2 product name
+        plus a specific tag for each one as follows:
+        <i>_rut</i>.
+        <table style="width:50%" align="center">
+            <tr>
+                <th>Contributor</th>
+                <th>Tag</th>
+            </tr>
+            <tr>
+                <td>Instrument noise</td>
+                <td><i>_rutunoise</i></td>
+            </tr>
+            <tr>
+                <td>OOF straylight systematic</td>
+                <td><i>_rutu_stray_sys</i></td>
+            </tr>
+            <tr>
+                <td>ADC quantisation</td>
+                <td><i>_rutADC</i></td>
+            </tr>
+            <tr>
+                <td>DS stability</td>
+                <td><i>_rutds</i></td>
+            </tr>
+            <tr>
+                <td>L1C image quantisation</td>
+                <td><i>_rutuL1Cquant</i></td>
+            </tr>
+        </table>
+    </li>
+    <li>
+        Set the correct parameters in the script. Here below shows the global variables that must be specified in the
+        script.
+        <p style="color: #ffffff; background-color:black;white-space: pre-line"><code>ITERPOINTS = 2000 # Number of
+            iteration points that MonteCarlo performs</code>
+            <code> </code>
+            <code># append the two folder directories so that can import the classes inside.</code>
+            <code>ROI_PATH = '/home/data/UncertaintyGobabeb' # contains the uncertainty products for each site and
+                stores the results</code>
+            <code>S2_DATA = '/home/data/S2Gobabeb' # here the specified S2 L1C products are read</code>
+            <code> </code>
+            <code># It is only prepared to process the *.dim files.</code>
+            <code>UNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rut.dim"</code>
+            <code>ROIUNC_FILE = "S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644_rutroi.dim"</code>
+            <code>S2FILE = os.path.join("S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE",
+                "MTD_MSIL1C.xml")</code>
+            <code>LAT = -23.6</code>
+            <code>LON = 15.119</code>
+            <code># In order to work, the ROI width and height must be the same.</code>
+            <code>W = 500</code>
+            <code>H = 500</code></p>
+        <p>These settings read the S2 product (<span
+                style="color: #ffffff; background-color:black;white-space: pre-line"><code>S2FILE</code></span>) from
+            the <span style="color: #ffffff; background-color:black;white-space: pre-line"><code>S2DATA</code></span>
+            folder. The <span style="color: #ffffff; background-color:black;white-space: pre-line"><code>UNC_FILE</code></span>
+            and <span
+                    style="color: #ffffff; background-color:black;white-space: pre-line"><code>ROIUNC_FILE</code></span>
+            are contained in <span
+                    style="color: #ffffff; background-color:black;white-space: pre-line"><code>ROI_PATH</code></span>.
+            Note that this same folder must also contain the uncertainty images of specific contributors.Here <span
+                    style="color: #ffffff; background-color:black;white-space: pre-line"><code>LAT,LON,W,H</code></span>
+            describe the latitude, longitude, width and lenght of the ROI respectively. In this version of the script,
+            both width and length must be set at the same value</p>
+    </li>
+    <li>
+        Run the script E.g. in a python console as follows:
+        <p style="color: #ffffff; background-color:black;white-space: pre-line"><code>>>import sys</code>
+            <code>>>sys.path.append("PATH_TO_SNAP-RUT/snap-rut/src/test/python")</code>
+            <code>>>import s2roiunc_test</code>
+            <code>>>s2roiunc = s2roiunc_test.S2ROIuncprocessor()</code>
+            <code>>>s2roiunc.MCMmethod()</code></p>
+    </li>
+    <li>
+        Results will be stored in the folder set at <span
+            style="color: #ffffff; background-color:black;white-space: pre-line"><code>ROI_PATH</code></span>. For the
+        settings here described this is the plot containing the MonteCarlo simulation:
+        <p align="center"><img src="images/MCMuncertainty.png" width="40%" height="40%" border=0></p>
+    </li>
+</ul>
+
+
+<h3>References</h3>
+
+<ul style="list-style-type:square">
+    <li><a name="ref1"><b>[1]</b></a> Gorroño, J., Hunt, S., Scanlon, T., Banks, A., Fox, N., Woolliams, E., et al.
+        (2017). Providing uncertainty estimates of the Sentinel-2 Top-of-Atmosphere measurements for radiometric
+        validation activities. European Journal of Remote Sensing(Submitted to special issue "Sentinel-2 data
+        calibration and validation").
+        <object classid="java:org.netbeans.modules.javahelp.BrowserDisplayer">
+            <param name="content" value="http://explore.tandfonline.com/cfp/est/sspn/tegr-cfp-special-issue">
+            <param name="text"
+                   value="Gorroño, J., Hunt, S., Scanlon, T., Banks, A., Fox, N., Woolliams, E., et al. (2017). Providing uncertainty estimates of the Sentinel-2 Top-of-Atmosphere measurements for radiometric validation activities. European Journal of Remote Sensing(Submitted to special issue: Sentinel-2 data calibration and validation).">
+        </object>
+    </li>
+    <li><a name="ref2"><b>[2]</b></a> BIPM, IEC, IFCC, ILAC, ISO, IUPAC, IUPAP and OIML (2008). Guide to the Expression
+        of Uncertainty in Measurement, JCGM 100:2008 (PDF).
+        <object classid="java:org.netbeans.modules.javahelp.BrowserDisplayer">
+            <param name="content" value="http://www.bipm.org/utils/common/documents/jcgm/JCGM_100_2008_E.pdf">
+            <param name="text" value="Guide to the Expression of Uncertainty in Measurement, JCGM 100:2008 (PDF).">
+        </object>
+    </li>
+</ul>
+
+<br>
+<hr>
+</body>
+</html>
