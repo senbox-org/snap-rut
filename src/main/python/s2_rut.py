@@ -39,6 +39,7 @@ class S2RutOp:
     def __init__(self):
         self.s2_rut_info = None
         self.source_product = None
+        self.mask_group = None
         self.product_meta = None
         self.datastrip_meta = None
         self.spacecraft = None  # possible values are "Sentinel-2A" and "Sentinel-2B". Used as a dictionary key
@@ -66,6 +67,7 @@ class S2RutOp:
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
 
+        self.mask_group = self.source_product.getMaskGroup()  # obtain the masks from the product
         metadata_root = self.source_product.getMetadataRoot()
         self.product_meta = metadata_root.getElement('Level-1C_User_Product')
         self.datastrip_meta = metadata_root.getElement('Level-1C_DataStrip_ID')
@@ -193,7 +195,10 @@ class S2RutOp:
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id, self.spacecraft)
 
-        tile.setSamples(unc)
+        degrademask = self.mask_roi('msi_degraded_' + source_band.getName(), tile.getRectangle()) # selects the tile SZA values
+        print (np.mean(degrademask))
+        # selects the maximum element-wise. Mask value is always higher than 250 (max uncertainty)
+        tile.setSamples(np.maximum(unc,251*degrademask))
 
     # NOTE: this is a function that it is not stable enough
     # def computeTileStack(self, context, target_tiles, target_rectangle):
@@ -227,14 +232,14 @@ class S2RutOp:
         return (product_meta.getElement('General_Info').getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
 
-    def get_tecta(self, granule_meta):
-        '''
-        Deprecated function. Used for S2-RUTv1
-        :param granule_meta:
-        :return:
-        '''
-        return (granule_meta.getElement('Geometric_info').getElement('Tile_Angles').getElement('Mean_Sun_Angle').
-                getAttributeDouble('ZENITH_ANGLE'))
+    # def get_tecta(self, granule_meta):
+    #     '''
+    #     Deprecated function. Used for S2-RUTv1
+    #     :param granule_meta:
+    #     :return:
+    #     '''
+    #     return (granule_meta.getElement('Geometric_info').getElement('Tile_Angles').getElement('Mean_Sun_Angle').
+    #             getAttributeDouble('ZENITH_ANGLE'))
 
     def get_tecta(self):
         '''
@@ -302,3 +307,17 @@ class S2RutOp:
                 band_index = index
                 max_width = width
         return targetBandList[band_index]
+
+    def mask_roi(self, masktag, rectangle):
+        '''
+        The function supports the automatic read of ROI masks in function masks_extract
+        :param masktag: the tag of the mask from the S2 L1C product (list of them in self.source_product.getBandNames())
+        :return: ROI of raster data from the specific mask in integer (0 or 1 value)
+        '''
+        data = np.zeros( rectangle.width * rectangle.height, np.int32)
+        im = snappy.Mask.getSourceImage(self.mask_group.get(masktag))
+        im.getData().getPixels(rectangle.x, rectangle.y, rectangle.width, rectangle.height, data)
+        im.dispose()  # release all memory for the mask image
+        # No need to reshape data as unc values are not!!!
+        # data.shape = rectangle.height, rectangle.width
+        return data
