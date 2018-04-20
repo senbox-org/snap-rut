@@ -5,6 +5,7 @@ Created on Wed Jan 20 13:48:33 2016
 @author: jg9
 """
 import snappy
+from snappy import HashMap as hash
 import s2_rut_algo
 import numpy as np
 import datetime
@@ -23,7 +24,7 @@ import s2_l1_rad_conf as rad_conf
 
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
-S2_BAND_SAMPLING = {'B1': 60, 'B2': 10, 'B3': 10, 'B4': 10, 'B5': 20, 'B6': 20, 'B7': 20, 'B8': 20, 'B8A': 20, 'B9': 60,
+S2_BAND_SAMPLING = {'B1': 60, 'B2': 10, 'B3': 10, 'B4': 10, 'B5': 20, 'B6': 20, 'B7': 20, 'B8': 10, 'B8A': 20, 'B9': 60,
                     'B10': 60, 'B11': 20, 'B12': 20}
 
 # If a Java type is needed which is not imported by snappy by default it can be retrieved manually.
@@ -61,7 +62,6 @@ class S2RutOp:
         self.inforoot = ET.fromstring(data)  # this is at the level of <operator> in the xml file
 
         self.source_product = context.getSourceProduct()
-        self.source_sza = self.source_product.getBand('sun_zenith')
 
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
             raise RuntimeError('Source product must be of type "' + S2_MSI_TYPE_STRING + '"')
@@ -83,10 +83,11 @@ class S2RutOp:
 
         self.rut_algo.u_sun = self.get_u_sun(self.product_meta)
         self.rut_algo.quant = self.get_quant(self.product_meta)
-        tecta = 0.0
-        for granule_meta in granules_meta.getElements():
-            tecta += self.get_tecta(granule_meta)
-        self.rut_algo.tecta = tecta / granules_meta.getNumElements()
+        # tecta = 0.0
+        # for granule_meta in granules_meta.getElements():
+        #     tecta += self.get_tecta(granule_meta)
+        # self.rut_algo.tecta = tecta / granules_meta.getNumElements()
+        self.source_sza = self.get_tecta()
         self.rut_algo.k = self.get_k(context)
         self.rut_algo.unc_select = self.get_unc_select(context)
 
@@ -168,6 +169,18 @@ class S2RutOp:
 
         source_band = self.sourceBandMap[band]
         toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+
+        if S2_BAND_SAMPLING[source_band.getName()] == 10: # selects the correct resampled SZA band
+            source_sza = self.source_sza[0]
+        elif S2_BAND_SAMPLING[source_band.getName()] == 20:
+            source_sza = self.source_sza[1]
+        elif S2_BAND_SAMPLING[source_band.getName()] == 60:
+            source_sza = self.source_sza[2]
+
+        sza_tile = context.getSourceTile(source_sza, tile.getRectangle()) # selects the tile SZA values
+        sza_samples = sza_tile.getSamplesFloat()
+        self.rut_algo.tecta = sza_samples
+
         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
         self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
@@ -207,56 +220,67 @@ class S2RutOp:
         pass
 
     def get_quant(self, product_meta):
-        return (product_meta.getElement('General_info').
-                getElement('Product_Image_Characteristics').
+        return (product_meta.getElement('General_info').getElement('Product_Image_Characteristics').
                 getAttributeDouble('QUANTIFICATION_VALUE'))
 
     def get_u_sun(self, product_meta):
-        return (product_meta.getElement('General_Info').
-                getElement('Product_Image_Characteristics').
+        return (product_meta.getElement('General_Info').getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
 
     def get_tecta(self, granule_meta):
-        return (granule_meta.getElement('Geometric_info').
-                getElement('Tile_Angles').getElement('Mean_Sun_Angle').
+        '''
+        Deprecated function. Used for S2-RUTv1
+        :param granule_meta:
+        :return:
+        '''
+        return (granule_meta.getElement('Geometric_info').getElement('Tile_Angles').getElement('Mean_Sun_Angle').
                 getAttributeDouble('ZENITH_ANGLE'))
 
+    def get_tecta(self):
+        '''
+        Generates the SZA resampled at the S2 bands spatial resolution
+        :return: SZA angle bands resampled at 10,20 and 60m.
+        '''
+        parameters = hash()
+        parameters.put('targetResolution', 20)
+        parameters.put('upsampling', 'Bilinear')
+        parameters.put('downsampling', 'Mean')  # indiferent since angles will be always upsampled
+        parameters.put('flagDownsampling', 'FlagMedianAnd')
+        parameters.put('resampleOnPyramidLevels', True)
+        product20 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        parameters.put('targetResolution', 10)
+        product10 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        parameters.put('targetResolution', 60)
+        product60 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        return (product10.getBand('sun_zenith'), product20.getBand('sun_zenith'), product60.getBand('sun_zenith'))
+
     def get_e_sun(self, product_meta, band_id):
-        return float([i for i in product_meta.getElement('General_Info').
-                     getElement('Product_Image_Characteristics').
-                     getElement('Reflectance_Conversion').
-                     getElement('Solar_Irradiance_list').getAttributes() if i.getName() ==
-                      'SOLAR_IRRADIANCE'][band_id].getData().getElemString())
+        return float([i for i in product_meta.getElement('General_Info').getElement('Product_Image_Characteristics').
+                     getElement('Reflectance_Conversion').getElement('Solar_Irradiance_list').
+                     getAttributes() if i.getName() == 'SOLAR_IRRADIANCE'][band_id].getData().getElemString())
 
     def get_u_diff_temp(self, datastrip_meta, band_id):
         # START or STOP time has no effect. We provide a degradation based on MERIS year rates
-        time_start = datetime.datetime.strptime(
-            datastrip_meta.getElement('General_Info').getElement('Datastrip_Time_Info').getAttributeString(
-                'DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
+        time_start = datetime.datetime.strptime(datastrip_meta.getElement('General_Info').
+            getElement('Datastrip_Time_Info').getAttributeString(
+            'DATASTRIP_SENSING_START'), '%Y-%m-%dT%H:%M:%S.%fZ')
         return (time_start - self.time_init[self.spacecraft]).days / 365.25 * \
                rad_conf.u_diff_temp_rate[self.spacecraft][band_id]
 
     def get_beta(self, datastrip_meta, band_id):
-        return ([i for i in datastrip_meta.
-                getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
-                getElement('Radiometric_Quality_list').
-                getElements() if i.getName() == 'Radiometric_Quality'][band_id]
+        return ([i for i in datastrip_meta.getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
+                getElement('Radiometric_Quality_list').getElements() if i.getName() == 'Radiometric_Quality'][band_id]
                 .getElement('Noise_Model').getAttributeDouble('BETA'))
 
     def get_alpha(self, datastrip_meta, band_id):
-        return ([i for i in datastrip_meta.
-                getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
-                getElement('Radiometric_Quality_list').
-                getElements() if i.getName() == 'Radiometric_Quality'][band_id]
+        return ([i for i in datastrip_meta.getElement('Quality_Indicators_Info').getElement('Radiometric_Info').
+                getElement('Radiometric_Quality_list').getElements() if i.getName() == 'Radiometric_Quality'][band_id]
                 .getElement('Noise_Model').getAttributeDouble('ALPHA'))
 
     def get_a(self, datastrip_meta, band_id):
-        return ([i for i in datastrip_meta.getElement('Image_Data_Info').
-                getElement('Sensor_Configuration').
-                getElement('Acquisition_Configuration').
-                getElement('Spectral_Band_Info').getElements()
-                 if i.getName() == 'Spectral_Band_Information'][band_id]
-                .getAttributeDouble('PHYSICAL_GAINS'))
+        return ([i for i in datastrip_meta.getElement('Image_Data_Info').getElement('Sensor_Configuration').
+                getElement('Acquisition_Configuration').getElement('Spectral_Band_Info').getElements()
+                 if i.getName() == 'Spectral_Band_Information'][band_id].getAttributeDouble('PHYSICAL_GAINS'))
 
     def get_k(self, context):
         return (context.getParameter('coverage_factor'))

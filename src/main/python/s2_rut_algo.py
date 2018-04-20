@@ -72,13 +72,14 @@ class S2RutAlgo:
         #    Spectral_Band_Info/Spectral_Band_Information [bandId]/ PHYSICAL_GAINS
 
         # Replace the reflectance factors by CN values
-        cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / math.pi) * band_data
+        # cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / math.pi) * band_data
+        cn = (self.a * self.e_sun * self.u_sun * np.cos(np.radians(self.tecta)) / math.pi) * band_data
 
         #######################################################################
         # 3.	Orthorectification process
         #######################################################################
 
-        # TBD in RUTv2. Here both terms will be used with no distinction.
+        # TBD. Here both terms will be used with no distinction.
 
         #######################################################################
         # 4.	L1B uncertainty contributors: raw and dark signal
