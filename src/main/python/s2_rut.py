@@ -172,14 +172,20 @@ class S2RutOp:
         source_band = self.sourceBandMap[band]
         toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
 
-        if S2_BAND_SAMPLING[source_band.getName()] == 10: # selects the correct resampled SZA band
+        if S2_BAND_SAMPLING[source_band.getName()] == 10:  # selects the correct resampled SZA band
             source_sza = self.source_sza[0]
+            cloudmask = self.mask_roi('opaque_clouds_10m', tile.getRectangle())
+            cirrusmask = self.mask_roi('cirrus_clouds_10m', tile.getRectangle())
         elif S2_BAND_SAMPLING[source_band.getName()] == 20:
             source_sza = self.source_sza[1]
+            cloudmask = self.mask_roi('opaque_clouds_20m', tile.getRectangle())
+            cirrusmask = self.mask_roi('cirrus_clouds_20m', tile.getRectangle())
         elif S2_BAND_SAMPLING[source_band.getName()] == 60:
             source_sza = self.source_sza[2]
+            cloudmask = self.mask_roi('opaque_clouds_60m', tile.getRectangle())
+            cirrusmask = self.mask_roi('cirrus_clouds_60m', tile.getRectangle())
 
-        sza_tile = context.getSourceTile(source_sza, tile.getRectangle()) # selects the tile SZA values
+        sza_tile = context.getSourceTile(source_sza, tile.getRectangle())  # selects the tile SZA values
         sza_samples = sza_tile.getSamplesFloat()
         self.rut_algo.tecta = sza_samples
 
@@ -195,10 +201,23 @@ class S2RutOp:
         # this is the core where the uncertainty calculation should grow
         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id, self.spacecraft)
 
-        degrademask = self.mask_roi('msi_degraded_' + source_band.getName(), tile.getRectangle()) # selects the tile SZA values
-        print (np.mean(degrademask))
-        # selects the maximum element-wise. Mask value is always higher than 250 (max uncertainty)
-        tile.setSamples(np.maximum(unc,251*degrademask))
+        degrademask = self.mask_roi('msi_degraded_' + source_band.getName(), tile.getRectangle())
+        lostmask = self.mask_roi('msi_lost_' + source_band.getName(), tile.getRectangle())
+        defectmask = self.mask_roi('defective_' + source_band.getName(), tile.getRectangle())
+        invalidmask = np.maximum(np.maximum(degrademask, lostmask), defectmask)
+        satl1amask = self.mask_roi('saturated_l1a_' + source_band.getName(), tile.getRectangle())
+        satl1bmask = self.mask_roi('saturated_l1b_' + source_band.getName(), tile.getRectangle())
+        satl1mask = np.maximum(satl1amask, satl1bmask)
+        nodatamask = self.mask_roi('nodata_' + source_band.getName(), tile.getRectangle())
+        # selects the maximum element-wise. Mask true value is 255. This is higher than 250 (max uncertainty permitted)
+        # 251 is for degraded,lost or defective data. 252 is for saturated (L1a or L1b). 253 is for pixel with no data,
+        # 254 is for cirrus cloud and 255 is for opaque clouds.
+        val = np.maximum(unc, np.uint8(251*invalidmask/255))
+        val = np.maximum(val, np.uint8(252*satl1mask/255))
+        val = np.maximum(val, np.uint8(253*nodatamask/255))
+        val = np.maximum(val, np.uint8(254*cirrusmask/255))
+        val = np.maximum(val, np.uint8(cloudmask))
+        tile.setSamples(val)
 
     # NOTE: this is a function that it is not stable enough
     # def computeTileStack(self, context, target_tiles, target_rectangle):
@@ -314,10 +333,10 @@ class S2RutOp:
         :param masktag: the tag of the mask from the S2 L1C product (list of them in self.source_product.getBandNames())
         :return: ROI of raster data from the specific mask in integer (0 or 1 value)
         '''
-        data = np.zeros( rectangle.width * rectangle.height, np.int32)
-        im = snappy.Mask.getSourceImage(self.mask_group.get(masktag))
-        im.getData().getPixels(rectangle.x, rectangle.y, rectangle.width, rectangle.height, data)
-        im.dispose()  # release all memory for the mask image
+        data = np.zeros(rectangle.width * rectangle.height, np.uint32)
+        im = self.mask_group.get(masktag)
+        im2 = snappy.jpy.cast(im, snappy.Mask)  # change from ProductNode to Mask typo
+        im2.readPixels(rectangle.x, rectangle.y, rectangle.width, rectangle.height, data)
         # No need to reshape data as unc values are not!!!
         # data.shape = rectangle.height, rectangle.width
         return data
