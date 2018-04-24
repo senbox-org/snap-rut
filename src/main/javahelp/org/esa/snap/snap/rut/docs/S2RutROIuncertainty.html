@@ -66,7 +66,7 @@
     this method, the user interface incorporates a tick option to select individual effects, as shown below:
 </p>
 
-<p align="center"><img src="images/selectdeselectcontributors.png" width="20%" height="70%" border=0></p>
+<p align="center"><img src="images/selectdeselectcontributors.png" width="20%" height="45%" border=0></p>
 
 <p>
     The user can run the S2-RUT with unselected <i>instrument noise</i>, <i>Crosstalk</i>, <i>ADC_quantisation</i> and
@@ -76,6 +76,32 @@
     uncertainty images with the partially correlated contributions selected and deselected. The result is taken as the
     mean of the two ROI pixels for the two images.
 </p>
+
+<p>In order to further automatise the process, the GUI incorporates the option to save or load parameters in the
+    <i>File</i> tab (see above image). If the specific settings are saved once as GPF parameter file (XML), the user
+    can reload them at any time. For example the settings for this case would generate an xml with the following
+    content:
+</p>
+
+<p>
+    <code>&ltparameters&gt</code><br />
+    <code>&nbsp&nbsp&ltcoverage_factor&gt1.0&lt/coverage_factor&gt</code><br />
+    <code>&nbsp&nbsp&ltband_names&gtB3,B8A,B12&lt/band_names&gt</code><br />
+    <code>&nbsp&nbsp&ltInstrument_noise&gtfalse&lt/Instrument_noise&gt</code><br />
+    <code>&nbsp&nbsp&ltOOF_straylight-systematic&gttrue&lt/OOF_straylight-systematic&gt</code><br />
+    <code>&nbsp&nbsp&ltOOF_straylight-random&gttrue&lt/OOF_straylight-random&gt</code><br />
+    <code>&nbsp&nbsp&ltCrosstalk&gtfalse&lt/Crosstalk&gt</code><br />
+    <code>&nbsp&nbsp&ltADC_quantisation&gtfalse&lt/ADC_quantisation&gt</code><br />
+    <code>&nbsp&nbsp&ltDS_stability&gttrue&lt/DS_stability&gt</code><br />
+    <code>&nbsp&nbsp&ltGamma_knowledge&gttrue&lt/Gamma_knowledge&gt</code><br />
+    <code>&nbsp&nbsp&ltDiffuser-absolute_knowledge&gttrue&lt/Diffuser-absolute_knowledge&gt</code><br />
+    <code>&nbsp&nbsp&ltDiffuser-temporal_knowledge&gttrue&lt/Diffuser-temporal_knowledge&gt</code><br />
+    <code>&nbsp&nbsp&ltDiffuser-cosine_effect&gttrue&lt/Diffuser-cosine_effect&gt</code><br />
+    <code>&nbsp&nbsp&ltDiffuser-straylight_residual&gttrue&lt/Diffuser-straylight_residual&gt</code><br />
+    <code>&nbsp&nbsp&ltL1C_image_quantisation&gtfalse&lt/L1C_image_quantisation&gt</code><br />
+    <code>&lt/parameters&gt</code>
+</p>
+
 <p>
     The result is an uncertainty image with only correlated components. An example for S2A B3 in a 500m ROI in Gobabeb
     is shown below:
@@ -111,7 +137,10 @@
 <h3>Running the Monte-Carlo uncertainty propagation</h3>
 <p>
     The RUT does incorporate from version 2, the possibility to replicate a full Monte-Carlo uncertainty propagation of
-    the pixels in a ROI. The process is not straightforward but here below the execution is detailed step-by-step:
+    the pixels in a ROI. A script named <i>s2roiunc_test.py</i> is accessible to the users at
+    <a href="https://github.com/senbox-org/snap-rut">RUT-repository</a> (under <i>snap-rut/src/test/python/</i>).
+
+    The process is not straightforward but here below the execution is detailed step-by-step:
 </p>
 <ul style="list-style-type:square">
     <li>Select the S2 L1C product. E.g. <i>S2A_MSIL1C_20170609T084601_N0205_R107_T33KWP_20170609T090644.SAFE</i>
@@ -176,7 +205,8 @@
             <code>LON = 15.119</code>
             <code># In order to work, the ROI width and height must be the same.</code>
             <code>W = 500</code>
-            <code>H = 500</code></p>
+            <code>H = 500</code>
+        </p>
         <p>These settings read the S2 product (<span
                 style="color: #ffffff; background-color:black;white-space: pre-line"><code>S2FILE</code></span>) from
             the <span style="color: #ffffff; background-color:black;white-space: pre-line"><code>S2DATA</code></span>
@@ -188,7 +218,8 @@
             Note that this same folder must also contain the uncertainty images of specific contributors.Here <span
                     style="color: #ffffff; background-color:black;white-space: pre-line"><code>LAT,LON,W,H</code></span>
             describe the latitude, longitude, width and lenght of the ROI respectively. In this version of the script,
-            both width and length must be set at the same value</p>
+            both width and length must be set at the same value
+        </p>
     </li>
     <li>
         Run the script E.g. in a python console as follows:
@@ -196,7 +227,8 @@
             <code>>>sys.path.append("PATH_TO_SNAP-RUT/snap-rut/src/test/python")</code>
             <code>>>import s2roiunc_test</code>
             <code>>>s2roiunc = s2roiunc_test.S2ROIuncprocessor()</code>
-            <code>>>s2roiunc.MCMmethod()</code></p>
+            <code>>>s2roiunc.MCMmethod()</code>
+        </p>
     </li>
     <li>
         Results will be stored in the folder set at <span
