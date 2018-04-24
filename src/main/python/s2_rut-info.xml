@@ -45,7 +45,7 @@
             <description>The bands for which the uncertainty shall be computed</description>
             <!-- The type of the parameter; can be boolean, byte, short, int, long, float, double, java.lang.String -->
             <dataType>String[]</dataType>
-            <rasterDataNodeClass>org.esa.snap.core.datamodel.Band</rasterDataNodeClass>
+            <defaultValue>B1,B2,B3,B4,B5,B6,B7,B8,B8A,B9,B10,B11,B12</defaultValue>
         </parameter>
         <parameter>
             <!-- The name of the parameter; user operator.getParameter('lowerFactor') in your Python code to retrieve the value -->

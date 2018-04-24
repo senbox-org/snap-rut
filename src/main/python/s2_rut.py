@@ -212,10 +212,10 @@ class S2RutOp:
         # selects the maximum element-wise. Mask true value is 255. This is higher than 250 (max uncertainty permitted)
         # 251 is for degraded,lost or defective data. 252 is for saturated (L1a or L1b). 253 is for pixel with no data,
         # 254 is for cirrus cloud and 255 is for opaque clouds.
-        val = np.maximum(unc, np.uint8(251*invalidmask/255))
-        val = np.maximum(val, np.uint8(252*satl1mask/255))
-        val = np.maximum(val, np.uint8(253*nodatamask/255))
-        val = np.maximum(val, np.uint8(254*cirrusmask/255))
+        val = np.maximum(unc, np.uint8(251 * invalidmask / 255))
+        val = np.maximum(val, np.uint8(252 * satl1mask / 255))
+        val = np.maximum(val, np.uint8(253 * nodatamask / 255))
+        val = np.maximum(val, np.uint8(254 * cirrusmask / 255))
         val = np.maximum(val, np.uint8(cloudmask))
         tile.setSamples(val)
 
