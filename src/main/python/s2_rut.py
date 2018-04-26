@@ -9,8 +9,6 @@ from snappy import HashMap as hash
 import s2_rut_algo
 import numpy as np
 import datetime
-import inspect
-import zipfile
 import os
 
 try:
@@ -56,12 +54,6 @@ class S2RutOp:
         self.source_sza = None
 
     def initialize(self, context):
-
-        # Get the text of the s2_rut-info.xml by decompressing the .jar file and parse the xml file
-        zf = zipfile.ZipFile(os.path.dirname(inspect.getfile(self.__class__)), 'r')
-        data = zf.read('s2_rut-info.xml')
-        self.inforoot = ET.fromstring(data)  # this is at the level of <operator> in the xml file
-
         self.source_product = context.getSourceProduct()
 
         if self.source_product.getProductType() != S2_MSI_TYPE_STRING:
@@ -136,8 +128,9 @@ class S2RutOp:
         sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
         # RUT_VERSION
+        version = context.getSpi().getOperatorDescriptor().getVersion() # returns what written in the *-info.xml file
         sourceelem = MetadataElement('Version')
-        data = snappy.ProductData.createInstance(self.inforoot[3].text)  # version is the fourth node in the info xml
+        data = snappy.ProductData.createInstance(version)
         sourceattr = MetadataAttribute("VERSION", snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
