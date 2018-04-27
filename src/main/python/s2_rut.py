@@ -246,9 +246,8 @@ class S2RutOp:
 
     # def get_tecta(self, granule_meta):
     #     '''
-    #     Deprecated function. Used for S2-RUTv1
-    #     :param granule_meta:
-    #     :return:
+    #     Generates the SZA resampled at the S2 bands spatial resolution
+    #     :return: SZA angle bands resampled at 10,20 and 60m.
     #     '''
     #     return (granule_meta.getElement('Geometric_info').getElement('Tile_Angles').getElement('Mean_Sun_Angle').
     #             getAttributeDouble('ZENITH_ANGLE'))
@@ -260,7 +259,7 @@ class S2RutOp:
         '''
         parameters = hash()
         parameters.put('targetResolution', 20)
-        parameters.put('upsampling', 'Bilinear')
+        parameters.put('upsampling', 'Nearest') # ideal Bilinear but does not extrapolate (NaN) the external values yet
         parameters.put('downsampling', 'Mean')  # indiferent since angles will be always upsampled
         parameters.put('flagDownsampling', 'FlagMedianAnd')
         parameters.put('resampleOnPyramidLevels', True)
