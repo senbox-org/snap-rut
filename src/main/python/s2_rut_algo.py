@@ -53,16 +53,7 @@ class S2RutAlgo:
         """
 
         #######################################################################
-        # 1.	Initial check
-        #######################################################################
-        # a.	Cloud pixel
-        # b.	pixel_value == 0, [product metadata] General_Info/Product_Image_Characteristics/
-        # Special_Values/SPECIAL_VALUE_TEXT [NODATA]
-        # c.	pixel_value == 1,  [product metadata] General_Info/Product_Image_Characteristics/Special_Values/
-        # SPECIAL_VALUE_TEXT [SATURATED]
-
-        #######################################################################
-        # 2.	Undo reflectance conversion
+        # 1.	Undo reflectance conversion
         #######################################################################
         # a.	No action required
         # b.	[product metadata] #issue: missing one band
@@ -76,13 +67,13 @@ class S2RutAlgo:
         cn = (self.a * self.e_sun * self.u_sun * np.cos(np.radians(self.tecta)) / math.pi) * band_data
 
         #######################################################################
-        # 3.	Orthorectification process
+        # 2.	Orthorectification process
         #######################################################################
 
         # TBD. Here both terms will be used with no distinction.
 
         #######################################################################
-        # 4.	L1B uncertainty contributors: raw and dark signal
+        # 3.	L1B uncertainty contributors: raw and dark signal
         #######################################################################
 
         if self.unc_select[0]:
@@ -115,7 +106,7 @@ class S2RutAlgo:
             u_DS = 0
 
         #######################################################################
-        # 5.	L1B uncertainty contributors: gamma correction
+        # 4.	L1B uncertainty contributors: gamma correction
         #######################################################################
 
         if self.unc_select[6]:
@@ -124,7 +115,7 @@ class S2RutAlgo:
             self.u_gamma = 0
 
         #######################################################################
-        # 6.	L1C uncertainty contributors: absolute calibration coefficient
+        # 5.	L1C uncertainty contributors: absolute calibration coefficient
         #######################################################################
 
         if self.unc_select[7]:
@@ -142,7 +133,7 @@ class S2RutAlgo:
             self.u_diff_k = 0  # predefined but updated to 0 if deselected by user
 
         #######################################################################
-        # 7.	L1C uncertainty contributors: reflectance conversion
+        # 6.	L1C uncertainty contributors: reflectance conversion
         #######################################################################
 
         if self.unc_select[11]:
@@ -151,7 +142,7 @@ class S2RutAlgo:
             u_ref_quant = 0
 
         #######################################################################        
-        # 8.	Combine uncertainty contributors
+        # 7.	Combine uncertainty contributors
         #######################################################################        
         # NOTE: no gamma propagation for RUTv1!!!
         # values given as percentages. Multiplied by 10 and saved to 1 byte(uint8)

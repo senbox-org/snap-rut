@@ -37,9 +37,13 @@
     <b>Optical->Preprocessing->Sentinel-2 Radiometric Uncertainty Tool</b>.
     On the command line processor is available by means of the Graph Processing Tool <code>gpt</code>
     which is located in the Sentinel Toolbox <code>bin</code> directory.
-    Typing <code>gpt S2Rut -h</code> displays further information.
+    Typing <code>gpt S2Rut -h</code> displays further information. For example, the code below processes the uncertainty
+    for bands B1, B2 and B3 with the specific input product and output product:
 </p>
-
+<p><code>gpt S2RutOp -Ssource="/PATH_TO_PRODUCT/S2A_MSIL1C_20180220T105051_N0206_R051_T30SYJ_20180221T134037.SAFE" -t
+    "PATH_TO_FOLDER_WITH_S2_PRODUCTS/S2A_MSIL1C_20180220T105051_N0206_R051_T30SYJ_20180221T134037_rut.dim"
+    -Pband_names="B1,B2,B3"</code>
+</p>
 <p>
     Selecting the <b>Sentinel-2 Radiometric Uncertainty Tool</b> command from the Sentinel Toolbox menu opens up the
     following dialog:
@@ -86,10 +90,12 @@
     evaluation (<i>k</i>=1 means 68.27% probability):
 </p>
 <p class="i1">
-    <b>Band names:</b> Select the bands for which the uncertainty shall be computed.
+    <b>Band names:</b> Write down the bands for which the uncertainty shall be computed. All valid bands are written by
+    default. NOTE: No space between commas is required (see image above)
 </p>
 <p class="i1">
-    <b>Instrument noise:</b> Noise (shot, thermal, etc.) introduced by the silicon and CMT detectors of the MSI instrument
+    <b>Instrument noise:</b> Noise (shot, thermal, etc.) introduced by the silicon and CMT detectors of the MSI
+    instrument
 </p>
 <p class="i1">
     <b>OOF straylight-systematic:</b> Telescope Out-Of-Field light that results in a positive bias
@@ -119,7 +125,8 @@
     <b>Diffuser-cosine effect:</b> Cosine correction knowledge as a consequence of angular noise TBD
 </p>
 <p class="i1">
-    <b>Diffuser-straylight_residual:</b> Residual for the correction of the stray-light during in-flight diffuser calibration
+    <b>Diffuser-straylight_residual:</b> Residual for the correction of the stray-light during in-flight diffuser
+    calibration
 </p>
 <p class="i1">
     <b>L1C image quantisation:</b> Effect of the finite resolution of the L1C reflectance factor

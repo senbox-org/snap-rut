@@ -38,25 +38,36 @@
 <p>This function defines the product reading, the setup of the uncertainty product output and the global parameters
     extraction. Specific tasks:</p>
 <ul style="list-style-type:square">
-    <li>The source product is read (<code>source_product</code>) and verified as a valid Sentinel-2 product.
+    <li>
+        The source product is read (<code>source_product</code>) and verified as a valid Sentinel-2 product.
     </li>
-    <li>Parsing Sentinel-2 metadata at three levels: <code>product_meta</code>, <code>datastrip_meta</code> and
-        <code>granule_meta</code>.
+    <li>
+        Parsing Sentinel-2 metadata at three levels: <code>product_meta</code>, <code>datastrip_meta</code> and
+        <code>granule_meta</code>. It also identifies the <code>spacecraft</code> for either S2A or S2B units.
     </li>
-    <li>Extraction of global metadata parameters: distance to sun (<code>u_sun</code>),reflectance quantification
-        (<code>quant</code>) and
-        mean sun zenith angle (<code>tecta</code>). Note: next versions of the tool to include the per-pixel sun zenith
-        angle.
+    <li>
+        Gets the selected bands (<code>toa_band_names</code>) and verifies that it is not empty
     </li>
-    <li>Extraction of user parameters: selected bands (<code>toa_band_names</code>), coverage factor (<code>k</code>)
-        and uncertainty contributors flags (<code>unc_select</code>).
+    <li>
+        Extraction of global metadata parameters: distance to sun (<code>u_sun</code>),reflectance quantification
+        (<code>quant</code>) and sun zenith angle (<code>source_sza</code>). The later contains the per-pixel sun zenith
+        angle for 10, 20 and 60m spatial resolutions.
     </li>
-    <li>Setup of the uncertainty product including L1C <code>scene_width</code>, <code>scene_height</code> and
+    <li>
+        Extraction of user parameters: coverage factor (<code>k</code>) and uncertainty contributors flags
+        (<code>unc_select</code>).
+    </li>
+    <li>
+        Setup of the uncertainty product including L1C <code>scene_width</code>, <code>scene_height</code> and
         geolocation: <code>rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT', scene_width,
-            scene_height)</code>
+        scene_height)</code>
     </li>
-    <li>Add each one of the selected bands (<code>unc_toa_band</code>) in the uncertainty product with the correct name
+    <li>
+        Add each one of the selected bands (<code>unc_toa_band</code>) in the uncertainty product with the correct name
         and Nodata value.
+    </li>
+    <li>
+        Different metadata fields ar populated and added to the uncertainty product.
     </li>
 </ul>
 
@@ -65,38 +76,45 @@
 <p>This function selects the specific band in a tile, extracts the required parameters and sets the uncertainty samples
     after calling the S2RutAlgo operator. Specific tasks:</p>
 <ul style="list-style-type:square">
-    <li>Selects the <code>source_band</code> and <code>toa_band_id</code>.
+    <li>
+        Selects the <code>source_band</code> and <code>toa_band_id</code>.
     </li>
-    <li>Extracts the metadata parameters for the specific band: absolute calibration coefficient (<code>a</code>), sun
+    <li>
+        Selects <code>source_sza</code>, <code>cloudmask</code> and <code>cirrusmask</code> according to the spatial
+        resolution of the band.
+    </li>
+    <li>
+        Extracts the metadata parameters for the specific band: absolute calibration coefficient (<code>a</code>), sun
         irradiance (<code>e_sun</code>), noise model coefficients (<code>alpha</code> and <code>beta</code>), and
         estimated diffuser degradation (<code>u_diff_temp</code>).
     </li>
-    <li>Extracts the L1C samples <code>toa_samples</code>
+    <li>
+        Extracts the L1C samples <code>toa_samples</code>
     </li>
-    <li>Call the S2RutAlgo for the per-pixel uncertainty calculation
+    <li>
+        Call the class <b>S2RutAlgo</b> for the per-pixel uncertainty calculation
         <code>unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.uint16), toa_band_id)</code>
     </li>
-    <li>Set the samples in the destination <code>tile</code>
+    <li>
+        Obtains the rest of the S2 masks and combines those values with <code>unc</code>.
+    </li>
+    <li>
+        Set the samples in the destination <code>tile</code>
     </li>
 </ul>
 
 <h3>Description of class S2RutAlgo</h3>
 
-<h4>Step 1: Initial check</h4>
-<p>This step identifies No data, cloud, defective or saturated pixels.</p>
-<p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
-
-<h4>Step 2: Undo reflectance conversion</h4>
+<h4>Step 1: Undo reflectance conversion</h4>
 <p>This step converts the L1C reflectance in L1B <i>CN</i> counts.</p>
 <code>cn = (self.a * self.e_sun * self.u_sun * math.cos(math.radians(self.tecta)) / (
     math.pi * self.quant)) * band_data.</code>
-<p>Warning raised if <code>tecta</code> &gt 70&deg. Conversion error can be &gt 5%</p>
 
-<h4>Step 3: Orthorectification process</h4>
+<h4>Step 2: Orthorectification process</h4>
 <p>This step evaluates the impact of the uncertainty propagation through the resampling process.</p>
 <p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
 
-<h4>Step 4: L1B uncertainty contributors: raw and dark signal</h4>
+<h4>Step 3: L1B uncertainty contributors: raw and dark signal</h4>
 <p><b>NOTE: Each the following uncertainty contributors are pre-checked and included if <code>unc_select</code> == True</b>
 </p>
 
@@ -121,11 +139,11 @@
     </li>
 </ul>
 
-<h4>Step 5: L1B uncertainty contributors: gamma correction</h4>
+<h4>Step 4: L1B uncertainty contributors: gamma correction</h4>
 <p>Predefined relative gains residual in % units</p>
 <code>u_gamma = 0.4</code>
 
-<h4>Step 6: L1C uncertainty contributors: absolute calibration coefficient</h4>
+<h4>Step 5: L1C uncertainty contributors: absolute calibration coefficient</h4>
 <ul style="list-style-type:square">
     <li><p>Pre-flight diffuser reflectance knowledge in % units</p>
         <code>u_diff_abs = rad_conf.u_diff_absarray[band_id]</code>
@@ -140,11 +158,11 @@
     </li>
 </ul>
 
-<h4>Step 7: L1C uncertainty contributors: reflectance conversion</h4>
+<h4>Step 6: L1C uncertainty contributors: reflectance conversion</h4>
 <p>Impact of the reflectance factor digitisation in % units</p>
 <code>u_ref_quant = 100 * (0.5 / math.sqrt(3)) / band_data</code>
 
-<h4>Step 8: Combine uncertainty contributors</h4>
+<h4>Step 7: Combine uncertainty contributors</h4>
 <ul style="list-style-type:square">
     <li><p>Calculation of the terms u'<sub>DS</sub> and u'<sub>ADC</sub></p>
         <code>u_adc = (100 * self.u_ADC / math.sqrt(3)) / cn </code>; <code>u_ds = (100 * u_DS) / cn</code>
@@ -167,10 +185,6 @@
         <code>u_ref = np.uint8(np.clip(u_expand, 0, 250))</code>
     </li>
 </ul>
-
-<h4>Step 9: Append uncertainty information to the metadata</h4>
-<p>This step integrates relevant information (e.g. mean pixel uncertainty) in the uncertainty product metadata.</p>
-<p>RUTv1 does not include this step. This is to be implemented in next versions of the RUT</p>
 
 <br>
 <hr>
