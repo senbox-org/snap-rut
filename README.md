@@ -1,7 +1,7 @@
 # S2-RUT
 S2 RUT: Radiometric Uncertainty Tool for Sentinel-2 MSI L1C products (ESA IDEAS+ Programme)
 
-##How to build?
+## How to build?
 First the following tools are needed at least:
 - [Oracle JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html) version 8 or later
 - [Git client](https://git-scm.com) for fetching the source code
@@ -48,7 +48,9 @@ Then
 * Click **Install**, 
 * then **Close** and 
 * restart SNAP.
-* 
+
+You can also get **latest official** version when selecting the plgin from the **Available Plugins** tab.
+
 Once the S2-RUT processor is installed into SNAP it can be run from the SNAP Desktop UI's main menu at
 **Optical / Preprocessing / Sentinel-2 Radiometric Uncertainty Tool**
   
