@@ -44,7 +44,7 @@ Start SNAP (Desktop UI) and find the plugin manager in the main menu at
 Then 
 * select tab **Downloaded**, 
 * click button **Add Files** and 
-* select the plugin module file `<project_dir>/target/nbm/s3tbx-c2rcc-<version>.nbm`. 
+* select the plugin module file `<project_dir>/target/nbm/snap-rut-<version>.nbm`. 
 * Click **Install**, 
 * then **Close** and 
 * restart SNAP.
