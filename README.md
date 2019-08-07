@@ -38,6 +38,9 @@ The build creates a SNAP plugin module file `<project_dir>/target/nbm/snap-rut-<
 
 ## How to install and run the processor as SNAP plugin
 
+Prerequisite: Download and install SNAP (https://step.esa.int/main/download/snap-download/). Because the RUT tool is written in Python it is also necessary to configure SNAP to use a python environment. For a guide on how to do this seee the following wiki page: https://senbox.atlassian.net/wiki/spaces/SNAP/pages/50855941/Configure+Python+to+use+the+SNAP-Python+snappy+interface
+If you need help to do this (it can be tricky), have a look at the user forum of SNAP (https://forum.step.esa.int/). There are already several helpful posts. If this is done, you can go on with the installation of the plugin.
+
 Start SNAP (Desktop UI) and find the plugin manager in the main menu at 
 > **Tools / Plugins**
 
