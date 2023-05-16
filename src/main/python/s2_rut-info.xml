@@ -7,7 +7,7 @@
     <name>org.esa.snap.python.S2RutOp</name>
     <!-- The alias is a more user-friendly name, e.g. to be used on the command line -->
     <alias>S2RutOp</alias>
-    <operatorClass>org.esa.snap.python.gpf.PyOperator</operatorClass>
+    <operatorClass>org.esa.snap.snappy.gpf.PyOperator</operatorClass>
 
     <version>2.0</version>
     <authors>Javier Gorrono, Norman Fomferra and Marco Peters</authors>

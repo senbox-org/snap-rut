@@ -4,8 +4,8 @@ Created on Wed Jan 20 13:48:33 2016
 
 @author: jg9
 """
-import snappy
-from snappy import HashMap as hash
+import esa_snappy
+from esa_snappy import HashMap as hash
 import s2_rut_algo
 import numpy as np
 import datetime
@@ -18,19 +18,21 @@ except ImportError:
 import s2_l1_rad_conf as rad_conf
 
 # necessary for logging
-# from snappy import SystemUtils
+from esa_snappy import SystemUtils
 
 S2_MSI_TYPE_STRING = 'S2_MSI_Level-1C'
 S2_BAND_NAMES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10', 'B11', 'B12']
 S2_BAND_SAMPLING = {'B1': 60, 'B2': 10, 'B3': 10, 'B4': 10, 'B5': 20, 'B6': 20, 'B7': 20, 'B8': 10, 'B8A': 20, 'B9': 60,
                     'B10': 60, 'B11': 20, 'B12': 20}
 
-# If a Java type is needed which is not imported by snappy by default it can be retrieved manually.
+# If a Java type is needed which is not imported by esa_snappy by default it can be retrieved manually.
 # First import jpy and then the type to be imported
-from snappy import jpy
+from esa_snappy import jpy
 
 MetadataElement = jpy.get_type('org.esa.snap.core.datamodel.MetadataElement')
 MetadataAttribute = jpy.get_type('org.esa.snap.core.datamodel.MetadataAttribute')
+
+Integer = jpy.get_type('java.lang.Integer')
 
 
 class S2RutOp:
@@ -95,19 +97,19 @@ class S2RutOp:
                     raise RuntimeError('Source band "' + name + '" is not valid and has not been processed')
 
             source_band = self.source_product.getBand(name)
-            unc_toa_band = snappy.Band(name + '_rut', snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
+            unc_toa_band = esa_snappy.Band(name + '_rut', esa_snappy.ProductData.TYPE_UINT8, source_band.getRasterWidth(),
                                        source_band.getRasterHeight())
             unc_toa_band.setDescription('Uncertainty of ' + name + ' (coverage factor k=' + str(self.rut_algo.k) + ')')
             unc_toa_band.setNoDataValue(250)
             unc_toa_band.setNoDataValueUsed(True)
             self.targetBandList.append(unc_toa_band)
             self.sourceBandMap[unc_toa_band] = source_band
-            snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
+            esa_snappy.ProductUtils.copyGeoCoding(source_band, unc_toa_band)
 
         masterband = self.get_masterband(self.targetBandList)
-        rut_product = snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT',
+        rut_product = esa_snappy.Product(self.source_product.getName() + '_rut', 'S2_RUT',
                                      masterband.getRasterWidth(), masterband.getRasterHeight())  # in-memory product
-        snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
+        esa_snappy.ProductUtils.copyGeoCoding(masterband, rut_product)
         for band in self.targetBandList:
             rut_product.addBand(band)
 
@@ -115,23 +117,23 @@ class S2RutOp:
         self.rut_product_meta = rut_product.getMetadataRoot()  # Here we define the product metadata
         # SOURCE_PRODUCT
         sourceelem = MetadataElement('Source_product')
-        data = snappy.ProductData.createInstance(self.source_product.getDisplayName())
-        sourceattr = MetadataAttribute("SOURCE_PRODUCT", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        data = esa_snappy.ProductData.createInstance(self.source_product.getDisplayName())
+        sourceattr = MetadataAttribute("SOURCE_PRODUCT", esa_snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
         # COVERAGE_FACTOR
         sourceelem = MetadataElement('Coverage_factor')
-        data = snappy.ProductData.createInstance(str(context.getParameter('coverage_factor')))
-        sourceattr = MetadataAttribute("COVERAGE_FACTOR", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        data = esa_snappy.ProductData.createInstance(str(context.getParameter('coverage_factor')))
+        sourceattr = MetadataAttribute("COVERAGE_FACTOR", esa_snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
         # RUT_VERSION
         version = context.getSpi().getOperatorDescriptor().getVersion() # returns what written in the *-info.xml file
         sourceelem = MetadataElement('Version')
-        data = snappy.ProductData.createInstance(version)
-        sourceattr = MetadataAttribute("VERSION", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        data = esa_snappy.ProductData.createInstance(version)
+        sourceattr = MetadataAttribute("VERSION", esa_snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
@@ -142,15 +144,15 @@ class S2RutOp:
                         "DIFFUSER-TEMPORAL_KNOWLEDGE", "DIFFUSER-COSINE_EFFECT", "DIFFUSER-STRAYLIGHT_RESIDUAL",
                         "L1C_IMAGE_QUANTISATION"]
         for i in range(0, len(contributors)):
-            data = snappy.ProductData.createInstance(str(self.rut_algo.unc_select[i]))
-            sourceattr = MetadataAttribute(contributors[i], snappy.ProductData.TYPE_ASCII, data.getNumElems())
+            data = esa_snappy.ProductData.createInstance(str(self.rut_algo.unc_select[i]))
+            sourceattr = MetadataAttribute(contributors[i], esa_snappy.ProductData.TYPE_ASCII, data.getNumElems())
             sourceattr.setData(data)
             sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
         # DATE OF PROCESSING
         sourceelem = MetadataElement('Processing_datetime')
-        data = snappy.ProductData.createInstance(str(datetime.datetime.now()))
-        sourceattr = MetadataAttribute("PROCESSING_DATETIME", snappy.ProductData.TYPE_ASCII, data.getNumElems())
+        data = esa_snappy.ProductData.createInstance(str(datetime.datetime.now()))
+        sourceattr = MetadataAttribute("PROCESSING_DATETIME", esa_snappy.ProductData.TYPE_ASCII, data.getNumElems())
         sourceattr.setData(data)
         sourceelem.addAttribute(sourceattr)
         self.rut_product_meta.addElement(sourceelem)
@@ -159,11 +161,11 @@ class S2RutOp:
 
     def computeTile(self, context, band, tile):
         # Logging template
-        # SystemUtils.LOG.info('target band name: ' + band.getName())
-        # SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
+        SystemUtils.LOG.info('target band name: ' + band.getName())
+        SystemUtils.LOG.info('tile rect: ' + tile.getRectangle().toString())
 
         source_band = self.sourceBandMap[band]
-        toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
+        toa_band_id = int(S2_BAND_NAMES.index(source_band.getName()))
 
         if S2_BAND_SAMPLING[source_band.getName()] == 10:  # selects the correct resampled SZA band
             source_sza = self.source_sza[0]
@@ -212,27 +214,6 @@ class S2RutOp:
         val = np.maximum(val, np.uint8(cloudmask))
         tile.setSamples(val)
 
-    # NOTE: this is a function that it is not stable enough
-    # def computeTileStack(self, context, target_tiles, target_rectangle):
-    #     for targetband in self.targetBandList:
-    #         source_band = self.sourceBandMap[targetband]
-    #         tile = target_tiles.get(targetband)  # target_tiles is a Map<Band,Tile>
-    #         toa_band_id = np.int(S2_BAND_NAMES.index(source_band.getName()))
-    #         self.rut_algo.a = self.get_a(self.datastrip_meta, toa_band_id)
-    #         self.rut_algo.e_sun = self.get_e_sun(self.product_meta, toa_band_id)
-    #         self.rut_algo.alpha = self.get_alpha(self.datastrip_meta, toa_band_id)
-    #         self.rut_algo.beta = self.get_beta(self.datastrip_meta, toa_band_id)
-    #         self.rut_algo.u_diff_temp = self.get_u_diff_temp(self.datastrip_meta, toa_band_id)
-    #
-    #         toa_tile = context.getSourceTile(source_band, snappy.Rectangle(source_band.getRasterWidth(),
-    #                                                                        source_band.getRasterHeight()))
-    #         toa_samples = toa_tile.getSamplesFloat()
-    #
-    #         # this is the core where the uncertainty calculation should grow
-    #         unc = self.rut_algo.unc_calculation(np.array(toa_samples, dtype=np.float64), toa_band_id, self.spacecraft)
-    #
-    #         tile.setSamples(unc)
-
     def dispose(self, context):
         pass
 
@@ -244,30 +225,22 @@ class S2RutOp:
         return (product_meta.getElement('General_Info').getElement('Product_Image_Characteristics').
                 getElement('Reflectance_Conversion').getAttributeDouble('U'))
 
-    # def get_tecta(self, granule_meta):
-    #     '''
-    #     Generates the SZA resampled at the S2 bands spatial resolution
-    #     :return: SZA angle bands resampled at 10,20 and 60m.
-    #     '''
-    #     return (granule_meta.getElement('Geometric_info').getElement('Tile_Angles').getElement('Mean_Sun_Angle').
-    #             getAttributeDouble('ZENITH_ANGLE'))
-
     def get_tecta(self):
         '''
         Generates the SZA resampled at the S2 bands spatial resolution
         :return: SZA angle bands resampled at 10,20 and 60m.
         '''
         parameters = hash()
-        parameters.put('targetResolution', 20)
+        parameters.put('targetResolution', Integer(20))
         parameters.put('upsampling', 'Nearest') # ideal Bilinear but does not extrapolate (NaN) the external values yet
         parameters.put('downsampling', 'Mean')  # indiferent since angles will be always upsampled
         parameters.put('flagDownsampling', 'FlagMedianAnd')
         parameters.put('resampleOnPyramidLevels', True)
-        product20 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
-        parameters.put('targetResolution', 10)
-        product10 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
-        parameters.put('targetResolution', 60)
-        product60 = snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        product20 = esa_snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        parameters.put('targetResolution', Integer(10))
+        product10 = esa_snappy.GPF.createProduct('Resample', parameters, self.source_product)
+        parameters.put('targetResolution', Integer(60))
+        product60 = esa_snappy.GPF.createProduct('Resample', parameters, self.source_product)
         return (product10.getBand('sun_zenith'), product20.getBand('sun_zenith'), product60.getBand('sun_zenith'))
 
     def get_e_sun(self, product_meta, band_id):
@@ -325,10 +298,17 @@ class S2RutOp:
         :param masktag: the tag of the mask from the S2 L1C product (list of them in self.source_product.getBandNames())
         :return: ROI of raster data from the specific mask in integer (0 or 1 value)
         '''
-        data = np.zeros(rectangle.width * rectangle.height, np.uint32)
         im = self.mask_group.get(masktag)
-        im2 = snappy.jpy.cast(im, snappy.Mask)  # change from ProductNode to Mask typo
+        im2 = jpy.cast(im, esa_snappy.Mask)  # change from ProductNode to Mask typo
+        # data = np.zeros(rectangle.width * rectangle.height, np.uint32)
+        # with readPixels we need to read into an array of java.lang.Integers...
+        data = np.full(rectangle.width * rectangle.height, Integer(0))
         im2.readPixels(rectangle.x, rectangle.y, rectangle.width, rectangle.height, data)
-        # No need to reshape data as unc values are not!!!
-        # data.shape = rectangle.height, rectangle.width
-        return data
+
+        # however, we need to return a numpy array rather than an array of java.lang.Integers,
+        # so we need to reshuffle, which seems to work only pixel-wise...
+        data_np = np.zeros(rectangle.width * rectangle.height, np.uint8)
+        for i in range(rectangle.width * rectangle.height):
+            data_np[i] = data[i].intValue()
+
+        return data_np
